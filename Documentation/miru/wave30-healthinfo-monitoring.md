@@ -17,4 +17,12 @@ the gap in the reconstructed production H.40 configuration used by CI and
 device images. Both monitors are reporting/control features and do not change
 scheduler placement or memory-reclaim policy.
 
-Status: `wave30-implemented-locally-pending-ci`.
+Wave 30 run `34064447569` passed kernel plus reconstructed H.40 DTB/DTBO
+compilation, the matching 32 external modules, packaging, and artifact upload
+at kernel commit `03d47a1334b2ded2bc6c72fd5c0b55cd615ab88e` and external
+commit `3fe5933901e630913913ffa8614b59502a13a51f`. Artifact
+`miru-h40-wave30-healthinfo-monitoring-kernel-and-modules` (`9998738440`) is
+566180747 bytes and has GitHub digest
+`sha256:e4445b50c17817bcebed3babd6dc4caca5af6e751cf47048dc777fc33402cc35`.
+
+Status: `wave30-build-verified`.
