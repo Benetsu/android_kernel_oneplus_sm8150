@@ -20,3 +20,16 @@ The exact donor directory is connected through the existing
 `net/oplus_modules` source link. It requires no new main-kernel hook and adds no
 DLKM to the 32-module payload. Debug logging defaults off, and detailed game
 packet accounting remains driven by userspace UID/server selection.
+
+The Miru 4.14 compatibility layer removes one unused newer-kernel CRC header,
+uses the equivalent 4.14 raw-monotonic clock API, and maps the donor DPI
+traffic-control classifier onto the 4.14 RCU/work, IDR, callback, and extension
+validation interfaces without changing its packet-classification ABI.
+
+Wave 29 run `34062386716` passed kernel plus reconstructed H.40 DTB/DTBO
+compilation, the matching 32 external modules, packaging, and artifact upload
+at kernel commit `480e724a2d9ee3be1ebe9995bf23b86a9f705a5a` and external
+commit `3fe5933901e630913913ffa8614b59502a13a51f`. Artifact
+`miru-h40-wave29-data-module-kernel-and-modules` (`9998269322`) is 566184063
+bytes and has GitHub digest
+`sha256:473fa05b98dab96af3e823ac4988d1db84130063cf17b8b7716e75ba736d14f1`.
