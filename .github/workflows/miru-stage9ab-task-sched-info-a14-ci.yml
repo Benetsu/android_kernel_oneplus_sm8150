@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 180
     env:
       SOURCE_SHA: 480e724a2d9ee3be1ebe9995bf23b86a9f705a5a
-      MODULES_REPAIR_SHA: e74cc2fea0c19ca7776367b893d802a932a00722
+      MODULES_REPAIR_SHA: 3fe5933901e630913913ffa8614b59502a13a51f
       EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave29-data-module-ci1+
       PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave29-data-module-ci1
 
@@ -79,7 +79,7 @@ jobs:
 
           replacements = {
               'VENDOR_SHA=a21f9352e70a8685556582465309f8eb3fe401cb':
-                  'VENDOR_SHA=e74cc2fea0c19ca7776367b893d802a932a00722',
+                  'VENDOR_SHA=3fe5933901e630913913ffa8614b59502a13a51f',
               '== Miru H.40 Android 4.14.190 CI build ==':
                   '== Miru H.40 Wave 29 game network data module stable build ==',
               'KERNEL_LOCALVERSION=-miru-h40-lts190-ci1':
