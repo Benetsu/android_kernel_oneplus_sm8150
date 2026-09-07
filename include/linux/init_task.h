@@ -223,9 +223,17 @@ extern struct cred init_cred;
  *  INIT_TASK is used to set up the first task table, touch at
  * your own risk!. Base=0, limit=0x1fffff (=2MB)
  */
+#ifdef OPLUS_FEATURE_SCHED_ASSIST
+#define INIT_OPLUS_SCHED_ASSIST(tsk)					\
+	.ux_entry = LIST_HEAD_INIT(tsk.ux_entry),
+#else
+#define INIT_OPLUS_SCHED_ASSIST(tsk)
+#endif
+
 #define INIT_TASK(tsk)	\
 {									\
 	INIT_TASK_TI(tsk)						\
+	INIT_OPLUS_SCHED_ASSIST(tsk)				\
 	.state		= 0,						\
 	.stack		= init_stack,					\
 	.usage		= ATOMIC_INIT(2),				\
