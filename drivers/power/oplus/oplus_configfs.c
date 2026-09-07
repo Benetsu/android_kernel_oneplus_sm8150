@@ -100,6 +100,75 @@ static ssize_t battery_soh_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(battery_soh);
 
+static ssize_t fast_charge_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", oplus_chg_show_vooc_logo_ornot());
+}
+static DEVICE_ATTR_RO(fast_charge);
+
+static ssize_t battery_notify_code_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->notify_code);
+}
+static DEVICE_ATTR_RO(battery_notify_code);
+
+int __attribute__((weak)) oplus_chg_get_subcurrent(void)
+{
+	return 0;
+}
+
+static ssize_t sub_current_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+	int sub_current = 0;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	if (chip->dual_charger_support)
+		sub_current = oplus_chg_get_subcurrent();
+
+	return sprintf(buf, "%d\n", sub_current);
+}
+static DEVICE_ATTR_RO(sub_current);
+
+static ssize_t charge_timeout_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->chging_over_time);
+}
+static DEVICE_ATTR_RO(charge_timeout);
+
 #ifdef CONFIG_OPLUS_CHIP_SOC_NODE
 static ssize_t chip_soc_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -123,6 +192,10 @@ static struct device_attribute *oplus_battery_attributes[] = {
 	&dev_attr_battery_fcc,
 	&dev_attr_battery_rm,
 	&dev_attr_battery_soh,
+	&dev_attr_fast_charge,
+	&dev_attr_battery_notify_code,
+	&dev_attr_sub_current,
+	&dev_attr_charge_timeout,
 #ifdef CONFIG_OPLUS_CHIP_SOC_NODE
 	&dev_attr_chip_soc,
 #endif

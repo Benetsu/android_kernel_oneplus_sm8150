@@ -42,3 +42,31 @@ Contact:	Miru H.40 kernel maintainers
 Description:
 		Read-only battery state-of-health value reported as
 		`oplus_chg_chip.batt_soh` and consumed by power.stats and Midas.
+
+What:		/sys/class/oplus_chg/battery/fast_charge
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only VOOC fast-charge/logo state from the active Oplus charger
+		core, matching the OnePlus 9R ColorOS 14 charger ABI.
+
+What:		/sys/class/oplus_chg/battery/battery_notify_code
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only charger notification bit field reported as
+		`oplus_chg_chip.notify_code`.
+
+What:		/sys/class/oplus_chg/battery/sub_current
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only secondary-charger current. It reports zero on a
+		single-charger device or when no platform-specific backend is present.
+
+What:		/sys/class/oplus_chg/battery/charge_timeout
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only indication that charging exceeded the core's configured
+		charging-time limit, reported as `oplus_chg_chip.chging_over_time`.
