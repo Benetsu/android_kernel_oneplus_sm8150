@@ -14,3 +14,31 @@ Description:
 		Read-only raw state of charge reported by the active Oplus charger
 		core. This is the 9R `chip_soc` ABI consumed by the ColorOS 14 power
 		statistics service.
+
+What:		/sys/class/oplus_chg/battery/authenticate
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only battery authentication state from the active Oplus charger
+		core. ColorOS 14's charger service consumes this 9R attribute.
+
+What:		/sys/class/oplus_chg/battery/battery_cc
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only battery charge-cycle/coulomb counter value reported as
+		`oplus_chg_chip.batt_cc` and consumed by power.stats and Midas.
+
+What:		/sys/class/oplus_chg/battery/battery_fcc
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only full-charge-capacity value reported as
+		`oplus_chg_chip.batt_fcc` and consumed by ColorOS power monitoring.
+
+What:		/sys/class/oplus_chg/battery/battery_soh
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only battery state-of-health value reported as
+		`oplus_chg_chip.batt_soh` and consumed by power.stats and Midas.

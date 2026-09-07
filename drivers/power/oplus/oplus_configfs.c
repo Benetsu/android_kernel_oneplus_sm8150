@@ -25,6 +25,51 @@ static struct device *oplus_wireless_dir;
 /**********************************************************************
 * battery device nodes
 **********************************************************************/
+static ssize_t authenticate_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->authenticate);
+}
+static DEVICE_ATTR_RO(authenticate);
+
+static ssize_t battery_cc_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->batt_cc);
+}
+static DEVICE_ATTR_RO(battery_cc);
+
+static ssize_t battery_fcc_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->batt_fcc);
+}
+static DEVICE_ATTR_RO(battery_fcc);
+
 static ssize_t battery_rm_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -39,6 +84,21 @@ static ssize_t battery_rm_show(struct device *dev,
 	return sprintf(buf, "%d\n", chip->batt_rm);
 }
 static DEVICE_ATTR_RO(battery_rm);
+
+static ssize_t battery_soh_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->batt_soh);
+}
+static DEVICE_ATTR_RO(battery_soh);
 
 #ifdef CONFIG_OPLUS_CHIP_SOC_NODE
 static ssize_t chip_soc_show(struct device *dev,
@@ -58,7 +118,11 @@ static DEVICE_ATTR_RO(chip_soc);
 #endif
 
 static struct device_attribute *oplus_battery_attributes[] = {
+	&dev_attr_authenticate,
+	&dev_attr_battery_cc,
+	&dev_attr_battery_fcc,
 	&dev_attr_battery_rm,
+	&dev_attr_battery_soh,
 #ifdef CONFIG_OPLUS_CHIP_SOC_NODE
 	&dev_attr_chip_soc,
 #endif
