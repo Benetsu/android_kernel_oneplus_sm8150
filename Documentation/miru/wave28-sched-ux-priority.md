@@ -24,3 +24,11 @@ ordered priority scheduling is selected.
 defconfigs and the reconstructed H.40 build configuration, matching both 9R
 Kona production configurations. No DLKM is added; the implementation remains
 built into the existing sched_assist path.
+
+Build run `34056641894` passed the kernel and all reconstructed H.40 DTB/DTBO
+targets, the matching 32 external modules, packaging, and artifact upload at
+kernel commit `3d108d708e04807d862ef957dff6b1d43681f559` and external
+commit `ea54edf85f7f75493ac555cbc729b343cb822da3`. Artifact
+`miru-h40-wave28-sched-ux-priority-kernel-and-modules` (`9996592756`) has
+GitHub digest
+`sha256:5dbf549f5eff3f00fb985058666c63de871bd1050b601f7d630292d8d04eb803`.
