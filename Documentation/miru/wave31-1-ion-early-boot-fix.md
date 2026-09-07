@@ -27,4 +27,12 @@ commit is `9d0300392c13711320425926d37c9c6141ebf8bd`.
 Phone validation must start with TWRP. Recovery ADB and a Wave 31.1 kernel
 banner in pstore are required before attempting an Android boot.
 
-Status: `wave31-1-source-prepared`.
+Wave 31.1 run `34074370461` passed kernel plus reconstructed H.40 DTB/DTBO
+compilation, all 32 matching external modules, packaging, and artifact upload
+at kernel source commit `94ad0d7d1f683a436fa2c80ced4710f4cee3c596` and external
+commit `9d0300392c13711320425926d37c9c6141ebf8bd`. Artifact
+`miru-h40-wave31-1-ion-fix-kernel-and-modules` (`10002023006`) is 566304417
+bytes and has GitHub digest
+`sha256:29e40c403f39b93c7f76c910551e327c34b7f0889b3fa687085fceafec93617c`.
+
+Status: `wave31-1-build-verified`; phone boot validation remains pending.
