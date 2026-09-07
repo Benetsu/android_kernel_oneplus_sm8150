@@ -1,0 +1,16 @@
+What:		/sys/class/oplus_chg/battery/battery_rm
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only remaining battery capacity reported by the active Oplus
+		charger core, in the same units as `oplus_chg_chip.batt_rm`.
+		ColorOS 14 power statistics consumes this path as
+		`remaining_battery_power`.
+
+What:		/sys/class/oplus_chg/battery/chip_soc
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only raw state of charge reported by the active Oplus charger
+		core. This is the 9R `chip_soc` ABI consumed by the ColorOS 14 power
+		statistics service.
