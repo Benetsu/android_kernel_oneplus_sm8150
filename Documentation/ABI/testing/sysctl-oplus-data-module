@@ -1,0 +1,39 @@
+What:          /proc/sys/net/oplus_dpi/debug
+What:          /proc/sys/net/oplus_dpi/speed_intvl
+What:          /proc/sys/net/oplus_dpi/speed_expire
+What:          /proc/sys/net/oplus_dpi/dpi_timeout
+What:          /proc/sys/net/oplus_dpi/uid_tmgp_sgame
+What:          /proc/sys/net/oplus_dpi/s_notify_count
+What:          /proc/sys/net/oplus_dpi/s_match_app_count
+What:          /proc/sys/net/oplus_dpi/dpi_app_result_count
+What:          /proc/sys/net/oplus_dpi/dpi_func_result_count
+What:          /proc/sys/net/oplus_dpi/dpi_stream_result_count
+What:          /proc/sys/net/oplus_dpi/s_match_socket_count
+What:          /proc/sys/net/oplus_dpi/s_match_all_uid
+Date:          September 2026
+Contact:       KAI-Miru kernel maintainers
+Description:
+               OnePlus Android 14 data-module controls and counters for
+               per-UID deep-packet classification and stream-speed tracking.
+               Userspace selects target UIDs and classification scope through
+               the comm_netlink family; debug logging defaults off.
+
+What:          /proc/sys/net/tmgp_sgame/debug
+What:          /proc/sys/net/tmgp_sgame/delay_intvl
+What:          /proc/sys/net/tmgp_sgame/s_up_calc
+What:          /proc/sys/net/tmgp_sgame/s_down_calc
+Date:          September 2026
+Contact:       KAI-Miru kernel maintainers
+Description:
+               OnePlus Android 14 Honor of Kings network-delay accounting
+               controls.  Packet calculation is activated only after the
+               matching game UID/server flow is selected by userspace.
+
+What:          generic-netlink family "comm_netlink", version 1
+Date:          September 2026
+Contact:       KAI-Miru kernel maintainers
+Description:
+               Protobuf request, response, inform, and notification transport
+               used by the OnePlus data module.  Event IDs cover DPI target
+               selection, per-stream speed, game server/delay statistics, and
+               log-stream address classification.
