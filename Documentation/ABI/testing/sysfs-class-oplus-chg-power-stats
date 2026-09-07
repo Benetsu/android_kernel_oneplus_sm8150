@@ -70,3 +70,53 @@ Contact:	Miru H.40 kernel maintainers
 Description:
 		Read-only indication that charging exceeded the core's configured
 		charging-time limit, reported as `oplus_chg_chip.chging_over_time`.
+
+What:		/sys/class/oplus_chg/battery/design_capacity
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only configured battery design capacity in mAh, reported from
+		`oplus_chg_chip.batt_capacity_mah`.
+
+What:		/sys/class/oplus_chg/battery/battery_charging_state
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only Oplus charger-core state reported from
+		`oplus_chg_chip.charging_state`.
+
+What:		/sys/class/oplus_chg/battery/charge_term_current
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only configured charge termination current in mA. Present when
+		`CONFIG_OPLUS_SHORT_USERSPACE` is enabled.
+
+What:		/sys/class/oplus_chg/battery/input_current_settled
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only dynamic AICL result in mA, or the donor-compatible 2000 mA
+		fallback when the charger backend has no AICL result callback. Present
+		when `CONFIG_OPLUS_SHORT_USERSPACE` is enabled.
+
+What:		/sys/class/oplus_chg/battery/short_c_hw_status
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only short-circuit protection GPIO status. Present when
+		`CONFIG_OPLUS_SHORT_HW_CHECK` is enabled.
+
+What:		/sys/class/oplus_chg/battery/short_ic_otp_status
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only short-circuit protection IC OTP status. Present when
+		`CONFIG_OPLUS_SHORT_IC_CHECK` is enabled.
+
+What:		/sys/class/oplus_chg/battery/short_ic_otp_value
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Read-only detailed OTP error value returned by the existing Oplus
+		short-IC backend. Present when `CONFIG_OPLUS_SHORT_IC_CHECK` is enabled.

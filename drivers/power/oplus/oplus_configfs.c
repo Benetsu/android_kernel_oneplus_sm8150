@@ -169,6 +169,121 @@ static ssize_t charge_timeout_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(charge_timeout);
 
+static ssize_t design_capacity_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->batt_capacity_mah);
+}
+static DEVICE_ATTR_RO(design_capacity);
+
+static ssize_t battery_charging_state_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->charging_state);
+}
+static DEVICE_ATTR_RO(battery_charging_state);
+
+#ifdef CONFIG_OPLUS_SHORT_USERSPACE
+static ssize_t charge_term_current_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->limits.iterm_ma);
+}
+static DEVICE_ATTR_RO(charge_term_current);
+
+static ssize_t input_current_settled_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+	int val = 2000;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	if (chip->chg_ops && chip->chg_ops->get_dyna_aicl_result)
+		val = chip->chg_ops->get_dyna_aicl_result();
+
+	return sprintf(buf, "%d\n", val);
+}
+static DEVICE_ATTR_RO(input_current_settled);
+#endif
+
+#ifdef CONFIG_OPLUS_SHORT_HW_CHECK
+static ssize_t short_c_hw_status_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->short_c_batt.shortc_gpio_status);
+}
+static DEVICE_ATTR_RO(short_c_hw_status);
+#endif
+
+#ifdef CONFIG_OPLUS_SHORT_IC_CHECK
+static ssize_t short_ic_otp_status_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", chip->short_c_batt.ic_short_otp_st);
+}
+static DEVICE_ATTR_RO(short_ic_otp_status);
+
+static ssize_t short_ic_otp_value_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(oplus_battery_dir);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%d\n", oplus_short_ic_get_otp_error_value(chip));
+}
+static DEVICE_ATTR_RO(short_ic_otp_value);
+#endif
+
 #ifdef CONFIG_OPLUS_CHIP_SOC_NODE
 static ssize_t chip_soc_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -196,6 +311,19 @@ static struct device_attribute *oplus_battery_attributes[] = {
 	&dev_attr_battery_notify_code,
 	&dev_attr_sub_current,
 	&dev_attr_charge_timeout,
+	&dev_attr_design_capacity,
+	&dev_attr_battery_charging_state,
+#ifdef CONFIG_OPLUS_SHORT_USERSPACE
+	&dev_attr_charge_term_current,
+	&dev_attr_input_current_settled,
+#endif
+#ifdef CONFIG_OPLUS_SHORT_HW_CHECK
+	&dev_attr_short_c_hw_status,
+#endif
+#ifdef CONFIG_OPLUS_SHORT_IC_CHECK
+	&dev_attr_short_ic_otp_status,
+	&dev_attr_short_ic_otp_value,
+#endif
 #ifdef CONFIG_OPLUS_CHIP_SOC_NODE
 	&dev_attr_chip_soc,
 #endif
