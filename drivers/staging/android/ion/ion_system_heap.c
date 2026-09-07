@@ -87,6 +87,17 @@ static inline unsigned int order_to_size(int order)
 	return PAGE_SIZE << order;
 }
 
+static void free_page_info(struct page_info *info)
+{
+#ifdef CONFIG_OPLUS_ION_BOOSTPOOL
+	if (info->from_boost_kmem_cache) {
+		kmem_cache_free(boost_ion_info_cachep, info);
+		return;
+	}
+#endif
+	kfree(info);
+}
+
 struct pages_mem {
 	struct page **pages;
 	u32 size;
@@ -215,7 +226,7 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 		INIT_LIST_HEAD(&info->list);
 		return info;
 	}
-	kfree(info);
+	free_page_info(info);
 
 	return ERR_PTR(-ENOMEM);
 }
@@ -275,7 +286,7 @@ static struct page_info *alloc_from_pool_preferred(
 		return info;
 	}
 
-	kfree(info);
+	free_page_info(info);
 force_alloc:
 	return alloc_largest_available(heap, buffer, size, max_order);
 }
@@ -304,7 +315,7 @@ static unsigned int process_info(struct page_info *info,
 			data->pages[i++] = nth_page(page, j);
 	}
 	list_del(&info->list);
-	kfree(info);
+	free_page_info(info);
 	return i;
 }
 
@@ -403,7 +414,7 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 #ifdef OPLUS_FEATURE_UIFIRST
 			current->static_ux = 0;
 #endif /* OPLUS_FEATURE_UIFIRST */
-			if (!info)
+			if (IS_ERR_OR_NULL(info))
 				break;
 
 			sz = (1 << info->order) * PAGE_SIZE;
@@ -823,9 +834,9 @@ int ion_system_heap_create_pools(struct ion_page_pool **pools,
 		if (orders[i])
 			gfp_flags = high_order_gfp_flags;
 		pool = ion_page_pool_create(gfp_flags, orders[i], cached);
-		pool->boost_flag = boost_flag;
 		if (!pool)
 			goto err_create_pool;
+		pool->boost_flag = boost_flag;
 		pools[i] = pool;
 	}
 	return 0;
@@ -856,6 +867,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	heap->heap.ops = &system_heap_ops;
 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
+	heap->heap.priv = data->priv;
 
 	for (i = 0; i < VMID_LAST; i++)
 		if (is_secure_vmid_valid(i))
@@ -870,32 +882,38 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 		goto destroy_uncached_pools;
 
 #ifdef CONFIG_OPLUS_ION_BOOSTPOOL
+	/* Initialize shared allocation metadata before either worker can run. */
+	boost_ion_info_cachep = kmem_cache_create("boost_ion_info_cachep",
+						sizeof(struct page_info), 0, 0,
+						init_once);
+	if (boost_ion_info_cachep)
+		create_kmemcache_ion_info_success = true;
+	else
+		pr_err("boost_ion_info_cachep create failed\n");
+
 	boost_root_dir = proc_mkdir("boost_pool", NULL);
 	if (!IS_ERR_OR_NULL(boost_root_dir)) {
 		unsigned long cam_sz = 32 * 256, uncached_sz = 32 * 256;
 
 		if (totalram_pages > ((SZ_2G << 1) >> PAGE_SHIFT)) {
-			cam_sz = 192 * 256;
+			cam_sz = 128 * 256;
 			uncached_sz = 64 * 256;
 		}
-		/* on low memory target, we should not set 128Mib on camera pool. */
-		/* TODO set by total ram pages */
+
+		/* Match the Android 14 9R donor: uncached reserve first. */
+		heap->uncached_boost_pool = boost_pool_create(heap, 0,
+						uncached_sz, boost_root_dir,
+						"ion_boost_pool_uncached", 0);
+		if (!heap->uncached_boost_pool)
+			pr_err("%s: create boost_pool ion_uncached failed!\n",
+			       __func__);
+
 		heap->cam_pool = boost_pool_create(heap, ION_FLAG_CAMERA_BUFFER,
-						   cam_sz,
-						   boost_root_dir, "camera", ION_FLAG_CACHED);
+						   cam_sz, boost_root_dir,
+						   "camera", ION_FLAG_CACHED);
 		if (!heap->cam_pool)
 			pr_err("%s: create boost_pool camera failed!\n",
 			       __func__);
-		heap->uncached_boost_pool = boost_pool_create(heap, 0,
-						uncached_sz, boost_root_dir, "ion_boost_pool_uncached", 0);
-		if (!heap->uncached_boost_pool)
-			pr_err("%s: create boost_pool ion_uncached failed!\n", __func__);
-		boost_ion_info_cachep = kmem_cache_create("boost_ion_info_cachep",
-						sizeof(struct page_info), 0,0, init_once);
-		if (boost_ion_info_cachep != NULL)
-			create_kmemcache_ion_info_success = true;
-		else
-			pr_err("boost_ion_info_cachep create failed\n");
 	}
 #endif /* CONFIG_OPLUS_ION_BOOSTPOOL */
 	mutex_init(&heap->split_page_mutex);

@@ -1,0 +1,33 @@
+What:		/proc/boost_pool/camera
+What:		/proc/boost_pool/ion_boost_pool_uncached
+Date:		September 2026
+Contact:	KAI-Miru
+Description:
+	Read/write control and status for the cached camera and uncached ION
+	page-reserve pools. Reading reports current and configured watermarks plus
+	per-order page counts. Writing 0 restores the original watermarks, -1
+	stops refilling, and a larger positive page count requests asynchronous
+	prefill.
+
+What:		/proc/boost_pool/camera_low
+What:		/proc/boost_pool/ion_boost_pool_uncached_low
+Date:		September 2026
+Contact:	KAI-Miru
+Description:
+	Read/write low-watermark controls for both ION boost pools. Values are
+	page counts; reads also report the equivalent MiB.
+
+What:		/proc/boost_pool/camera_stat
+What:		/proc/boost_pool/ion_boost_pool_uncached_stat
+Date:		September 2026
+Contact:	KAI-Miru
+Description:
+	Read-only compact pool occupancy, prefill state, and available-memory
+	statistics.
+
+What:		/sys/module/oplus_ion_boost_pool/parameters/debug_boost_pool_enable
+Date:		September 2026
+Contact:	KAI-Miru
+Description:
+	Global read/write enable for ION boost-pool allocation and refill. The
+	authoritative OnePlus 9R Android 14 default is enabled.

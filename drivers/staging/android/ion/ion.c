@@ -1091,9 +1091,9 @@ static const struct dma_buf_ops dma_buf_ops = {
 #ifdef CONFIG_OPLUS_ION_BOOSTPOOL
 pid_t alloc_svc_tgid;
 /* TODO use task comm may not safe. */
-inline is_allocator_svc(struct task_struct *tsk)
+static inline bool is_allocator_svc(struct task_struct *tsk)
 {
-	return (tsk->tgid == alloc_svc_tgid);
+	return alloc_svc_tgid > 0 && tsk->tgid == alloc_svc_tgid;
 }
 
 static inline unsigned int boost_pool_extra_flags(unsigned int heap_id_mask)
