@@ -9,7 +9,7 @@ configurations.
 The feature adds cached camera and uncached system-heap reserve pools, connects
 their allocation/free/shrinker paths to the existing ION system heap, and
 publishes control and status under `/proc/boost_pool`. On devices with more
-than 4 GiB of RAM the donor policy uses a 192 MiB camera low watermark and a
+than 4 GiB of RAM the Android 14 9R donor policy uses a 128 MiB camera low watermark and a
 64 MiB uncached low watermark; smaller-memory targets use 32 MiB for each.
 The pool is enabled by default, remains reclaimable through the ION shrinker,
 and can be stopped or resized through its proc controls.
@@ -23,3 +23,8 @@ commit `3fe5933901e630913913ffa8614b59502a13a51f`. Artifact
 `sha256:61f6b73f62a7019d2aef4e3f2dc4a10cc53b5d0b5075fcbfaeb7db0d6d602e74`.
 
 Status: `wave31-build-verified`.
+
+Phone testing subsequently showed that this build could not reach either
+TWRP ADB or Android `post-fs`. See
+`Documentation/miru/wave31-1-ion-early-boot-fix.md` for the corrected donor
+integration and early-boot isolation build.

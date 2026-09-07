@@ -87,6 +87,17 @@ static inline unsigned int order_to_size(int order)
 	return PAGE_SIZE << order;
 }
 
+static void free_page_info(struct page_info *info)
+{
+#ifdef CONFIG_OPLUS_ION_BOOSTPOOL
+	if (info->from_boost_kmem_cache) {
+		kmem_cache_free(boost_ion_info_cachep, info);
+		return;
+	}
+#endif
+	kfree(info);
+}
+
 struct pages_mem {
 	struct page **pages;
 	u32 size;
@@ -215,7 +226,7 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 		INIT_LIST_HEAD(&info->list);
 		return info;
 	}
-	kfree(info);
+	free_page_info(info);
 
 	return ERR_PTR(-ENOMEM);
 }
@@ -275,7 +286,7 @@ static struct page_info *alloc_from_pool_preferred(
 		return info;
 	}
 
-	kfree(info);
+	free_page_info(info);
 force_alloc:
 	return alloc_largest_available(heap, buffer, size, max_order);
 }
@@ -304,7 +315,7 @@ static unsigned int process_info(struct page_info *info,
 			data->pages[i++] = nth_page(page, j);
 	}
 	list_del(&info->list);
-	kfree(info);
+	free_page_info(info);
 	return i;
 }
 
@@ -823,9 +834,9 @@ int ion_system_heap_create_pools(struct ion_page_pool **pools,
 		if (orders[i])
 			gfp_flags = high_order_gfp_flags;
 		pool = ion_page_pool_create(gfp_flags, orders[i], cached);
-		pool->boost_flag = boost_flag;
 		if (!pool)
 			goto err_create_pool;
+		pool->boost_flag = boost_flag;
 		pools[i] = pool;
 	}
 	return 0;
@@ -856,6 +867,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	heap->heap.ops = &system_heap_ops;
 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
+	heap->heap.priv = data->priv;
 
 	for (i = 0; i < VMID_LAST; i++)
 		if (is_secure_vmid_valid(i))
@@ -875,7 +887,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 		unsigned long cam_sz = 32 * 256, uncached_sz = 32 * 256;
 
 		if (totalram_pages > ((SZ_2G << 1) >> PAGE_SHIFT)) {
-			cam_sz = 192 * 256;
+			cam_sz = 128 * 256;
 			uncached_sz = 64 * 256;
 		}
 		/* on low memory target, we should not set 128Mib on camera pool. */
