@@ -861,13 +861,18 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	struct proc_dir_entry *boost_root_dir;
 #endif /* CONFIG_OPLUS_ION_BOOSTPOOL */
 
+	pr_emerg("MIRU31D: ion_system_heap_create enter data=%p priv=%p totalram_pages=%lu\n",
+		 data, data ? data->priv : NULL, totalram_pages);
 	heap = kzalloc(sizeof(*heap), GFP_KERNEL);
-	if (!heap)
+	if (!heap) {
+		pr_emerg("MIRU31D: ion_system_heap_create heap allocation failed\n");
 		return ERR_PTR(-ENOMEM);
+	}
 	heap->heap.ops = &system_heap_ops;
 	heap->heap.type = ION_HEAP_TYPE_SYSTEM;
 	heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
 	heap->heap.priv = data->priv;
+	pr_emerg("MIRU31D: ion system heap initialized priv=%p\n", heap->heap.priv);
 
 	for (i = 0; i < VMID_LAST; i++)
 		if (is_secure_vmid_valid(i))
@@ -875,14 +880,19 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 					heap->secure_pools[i], false, false))
 				goto destroy_secure_pools;
 
+	pr_emerg("MIRU31D: ION secure pools complete; creating uncached pools\n");
 	if (ion_system_heap_create_pools(heap->uncached_pools, false, false))
 		goto destroy_secure_pools;
+	pr_emerg("MIRU31D: ION uncached pools complete; creating cached pools\n");
 
 	if (ion_system_heap_create_pools(heap->cached_pools, true, false))
 		goto destroy_uncached_pools;
+	pr_emerg("MIRU31D: ION cached pools complete\n");
 
 #ifdef CONFIG_OPLUS_ION_BOOSTPOOL
+	pr_emerg("MIRU31D: boost-pool proc root create begin\n");
 	boost_root_dir = proc_mkdir("boost_pool", NULL);
+	pr_emerg("MIRU31D: boost-pool proc root=%p\n", boost_root_dir);
 	if (!IS_ERR_OR_NULL(boost_root_dir)) {
 		unsigned long cam_sz = 32 * 256, uncached_sz = 32 * 256;
 
@@ -892,14 +902,19 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 		}
 		/* on low memory target, we should not set 128Mib on camera pool. */
 		/* TODO set by total ram pages */
+		pr_emerg("MIRU31D: camera boost-pool create begin pages=%lu\n", cam_sz);
 		heap->cam_pool = boost_pool_create(heap, ION_FLAG_CAMERA_BUFFER,
 						   cam_sz,
 						   boost_root_dir, "camera", ION_FLAG_CACHED);
+		pr_emerg("MIRU31D: camera boost-pool create end pool=%p\n", heap->cam_pool);
 		if (!heap->cam_pool)
 			pr_err("%s: create boost_pool camera failed!\n",
 			       __func__);
+		pr_emerg("MIRU31D: uncached boost-pool create begin pages=%lu\n", uncached_sz);
 		heap->uncached_boost_pool = boost_pool_create(heap, 0,
 						uncached_sz, boost_root_dir, "ion_boost_pool_uncached", 0);
+		pr_emerg("MIRU31D: uncached boost-pool create end pool=%p\n",
+			 heap->uncached_boost_pool);
 		if (!heap->uncached_boost_pool)
 			pr_err("%s: create boost_pool ion_uncached failed!\n", __func__);
 		boost_ion_info_cachep = kmem_cache_create("boost_ion_info_cachep",
@@ -913,6 +928,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	mutex_init(&heap->split_page_mutex);
 
 	heap->heap.debug_show = ion_system_heap_debug_show;
+	pr_emerg("MIRU31D: ion_system_heap_create complete heap=%p\n", heap);
 
 	return &heap->heap;
 

@@ -39,20 +39,24 @@
 #define RAMOOPS_KERNMSG_HDR "===="
 #define MIN_MEM_SIZE 4096UL
 
-static ulong record_size = MIN_MEM_SIZE;
+/*
+ * Wave 31.1D diagnostic: instantiate the shipped H.40 ramoops region before
+ * DT platform population so pre-userspace initcall failures remain visible.
+ */
+static ulong record_size = 0x40000UL;
 module_param(record_size, ulong, 0400);
 MODULE_PARM_DESC(record_size,
 		"size of each dump done on oops/panic");
 
-static ulong ramoops_console_size = MIN_MEM_SIZE;
+static ulong ramoops_console_size = 0x40000UL;
 module_param_named(console_size, ramoops_console_size, ulong, 0400);
 MODULE_PARM_DESC(console_size, "size of kernel console log");
 
-static ulong ramoops_ftrace_size = MIN_MEM_SIZE;
+static ulong ramoops_ftrace_size = 0x40000UL;
 module_param_named(ftrace_size, ramoops_ftrace_size, ulong, 0400);
 MODULE_PARM_DESC(ftrace_size, "size of ftrace log");
 
-static ulong ramoops_pmsg_size = MIN_MEM_SIZE;
+static ulong ramoops_pmsg_size = 0x200000UL;
 module_param_named(pmsg_size, ramoops_pmsg_size, ulong, 0400);
 MODULE_PARM_DESC(pmsg_size, "size of user space message log");
 
@@ -62,12 +66,12 @@ module_param_named(device_info_size, ramoops_device_info_size, ulong, 0400);
 MODULE_PARM_DESC(device_info_size, "size of device info");
 #endif /* OPLUS_FEATURE_DUMPDEVICE */
 
-static unsigned long long mem_address;
+static unsigned long long mem_address = 0xA9800000ULL;
 module_param_hw(mem_address, ullong, other, 0400);
 MODULE_PARM_DESC(mem_address,
 		"start of reserved RAM used to store oops/panic logs");
 
-static ulong mem_size;
+static ulong mem_size = 0x400000UL;
 module_param(mem_size, ulong, 0400);
 MODULE_PARM_DESC(mem_size,
 		"size of reserved RAM used to store oops/panic logs");
@@ -1022,10 +1026,15 @@ static void ramoops_register_dummy(void)
 
 static int __init ramoops_init(void)
 {
+	int ret;
+
 	ramoops_register_dummy();
-	return platform_driver_register(&ramoops_driver);
+	ret = platform_driver_register(&ramoops_driver);
+	pr_emerg("MIRU31D: early ramoops init ret=%d region=0x%llx+0x%lx\n",
+		 ret, mem_address, mem_size);
+	return ret;
 }
-postcore_initcall(ramoops_init);
+early_initcall(ramoops_init);
 
 static void __exit ramoops_exit(void)
 {
