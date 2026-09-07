@@ -1,10 +1,10 @@
-name: Miru H.40 Wave 31.2 ordered UX init fix build
+name: Miru H.40 Wave 31.3 ordered UX bootstrap guard build
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - miru-h40-wave31-2-ux-init-fix-ci-trigger
+      - miru-h40-wave31-3-ordered-ux-bootstrap-guard-ci-trigger
     paths:
       - '.github/workflows/miru-stage9ab-task-sched-info-a14-ci.yml'
 
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: miru-h40-wave31-2-ux-init-fix
+  group: miru-h40-wave31-3-ordered-ux-bootstrap-guard
   cancel-in-progress: true
 
 jobs:
@@ -21,12 +21,12 @@ jobs:
     timeout-minutes: 180
     env:
       SOURCE_SHA: 83720bea79246db3906bd6a2b8f64913239c9dc2
-      MODULES_REPAIR_SHA: 9d0300392c13711320425926d37c9c6141ebf8bd
-      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave31-2-ux-init-fix-ci1+
-      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave31-2-ux-init-fix-ci1
+      MODULES_REPAIR_SHA: b975c6f5e9f06e4b3c4d3af5144517a643218009
+      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave31-3-ux-boot-guard-ci1+
+      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave31-3-ux-boot-guard-ci1
 
     steps:
-      - name: Checkout Wave 31.2 ordered UX init fix source
+      - name: Checkout Wave 31.3 ordered UX bootstrap guard source
         uses: actions/checkout@v4
         with:
           ref: ${{ env.SOURCE_SHA }}
@@ -73,23 +73,23 @@ jobs:
               'printf \'%s\\n\' "${EXPECTED_RELEASE}" > "${ARTIFACT_DIR}/KERNEL-RELEASE.txt"',
               'printf \'%s\\n\' "${SOURCE_SHA}" > "${ARTIFACT_DIR}/SOURCE-SHA.txt"',
               'printf \'%s\\n\' "${MODULES_REPAIR_SHA}" > "${ARTIFACT_DIR}/VENDOR-SHA.txt"',
-              'sha256sum "${ARTIFACT_DIR}/${EXPECTED_RELEASE}-Image.gz-dtb" > "${ARTIFACT_DIR}/WAVE31-2-UX-INIT-FIX-IMAGE-SHA256.txt"',
-              'echo "Wave 31.2 ordered UX init fix kernel build: PASS"',
+              'sha256sum "${ARTIFACT_DIR}/${EXPECTED_RELEASE}-Image.gz-dtb" > "${ARTIFACT_DIR}/WAVE31-3-UX-BOOT-GUARD-IMAGE-SHA256.txt"',
+              'echo "Wave 31.3 ordered UX bootstrap guard kernel build: PASS"',
           ])
 
           replacements = {
               'VENDOR_SHA=9d0300392c13711320425926d37c9c6141ebf8bd':
-                  'VENDOR_SHA=9d0300392c13711320425926d37c9c6141ebf8bd',
+                  'VENDOR_SHA=b975c6f5e9f06e4b3c4d3af5144517a643218009',
               '== Miru H.40 Android 4.14.190 CI build ==':
-                  '== Miru H.40 Wave 31.2 ordered UX init fix stable build ==',
+                  '== Miru H.40 Wave 31.3 ordered UX bootstrap guard stable build ==',
               'KERNEL_LOCALVERSION=-miru-h40-lts190-ci1':
-                  'KERNEL_LOCALVERSION=-miru-h40-wave31-2-ux-init-fix-ci1',
+                  'KERNEL_LOCALVERSION=-miru-h40-wave31-3-ux-boot-guard-ci1',
               'CONFIG_LOCALVERSION="-miru-h40-lts190-ci1"':
-                  'CONFIG_LOCALVERSION="-miru-h40-wave31-2-ux-init-fix-ci1"',
+                  'CONFIG_LOCALVERSION="-miru-h40-wave31-3-ux-boot-guard-ci1"',
               'export SKIP_PRODUCTION_DTS=1':
                   'export SKIP_PRODUCTION_DTS=0',
               "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 '^Linux version 4\\.14\\.190-' || true)\"":
-                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave31-2-ux-init-fix-ci1+' || true)\"",
+                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave31-3-ux-boot-guard-ci1+' || true)\"",
               'echo "Clean kernel build and output validation: PASS"': final,
           }
           for old, new in replacements.items():
@@ -171,7 +171,7 @@ jobs:
               ('4.14.190-miru-h40-lts190-ci1+', release, 1),
               ('miru-v3-modules-dropin-4.14.190', package_tag, 4),
               ('Miru 4.14.190 rebuilt external module ABI report',
-               'Miru Wave 31.2 ordered UX init fix external module report', 1),
+               'Miru Wave 31.3 ordered UX bootstrap guard external module report', 1),
           )
           for old, new, expected in replacements:
               actual = text.count(old)
@@ -202,7 +202,7 @@ jobs:
       - name: Upload Wave 31 kernel, device trees, and modules
         uses: actions/upload-artifact@v4
         with:
-          name: miru-h40-wave31-2-ux-init-fix-kernel-and-modules
+          name: miru-h40-wave31-3-ordered-ux-bootstrap-guard-kernel-and-modules
           path: ${{ runner.temp }}/android-root/out/h40-artifacts
           if-no-files-found: error
           compression-level: 0
