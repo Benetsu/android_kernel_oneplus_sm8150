@@ -126,6 +126,10 @@ obj-$(CONFIG_OPLUS_MULTI_KSWAPD) += multi_kswapd/
 obj-$(CONFIG_PHYSICAL_ANTI_FRAGMENTATION) += multi_freearea.o
 #endif
 
+#ifdef OPLUS_FEATURE_PROACTIVE_COMPACT
+obj-$(CONFIG_PROACTIVE_COMPACT) += proactive_compact/
+#endif /* OPLUS_FEATURE_PROACTIVE_COMPACT */
+
 #if defined(OPLUS_FEATURE_MEMLEAK_DETECT)
 #/* collect all tasks memory info */
 #ifeq ($(OPLUS_FEATURE_MEMLEAK_DETECT), yes)

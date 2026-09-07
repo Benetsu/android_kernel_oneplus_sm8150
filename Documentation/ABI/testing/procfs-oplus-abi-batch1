@@ -7,11 +7,12 @@ Description:
 		fragmented, the huge-page order used for scoring, and the scoring
 		proactiveness.  The accepted writes are:
 
-		  compaction_hpage_order=<0..MAX_ORDER-1>
-		  compaction_proactiveness=<0..100>
+		  compaction_hpage_order=<0..200>
+		  compaction_proactiveness=<0..200>
 
 		The interface changes only these scoring values and does not start
-		compaction.
+		compaction.  Miru Wave 32 restores the built-in 9R implementation;
+		older Miru documentation listed this ABI before it existed at runtime.
 
 What:		/proc/storage/buf_log
 Date:		September 2026
