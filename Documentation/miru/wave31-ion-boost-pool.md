@@ -14,4 +14,12 @@ than 4 GiB of RAM the donor policy uses a 192 MiB camera low watermark and a
 The pool is enabled by default, remains reclaimable through the ION shrinker,
 and can be stopped or resized through its proc controls.
 
-Status: `wave31-implemented-locally-pending-ci`.
+Wave 31 run `34065740351` passed kernel plus reconstructed H.40 DTB/DTBO
+compilation, the matching 32 external modules, packaging, and artifact upload
+at kernel commit `52e4ea3db867edd3fb602a6a5a6442ea16901e9e` and external
+commit `3fe5933901e630913913ffa8614b59502a13a51f`. Artifact
+`miru-h40-wave31-ion-boost-pool-kernel-and-modules` (`9999283213`) is
+566307061 bytes and has GitHub digest
+`sha256:61f6b73f62a7019d2aef4e3f2dc4a10cc53b5d0b5075fcbfaeb7db0d6d602e74`.
+
+Status: `wave31-build-verified`.
