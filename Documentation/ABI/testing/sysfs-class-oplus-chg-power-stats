@@ -120,3 +120,13 @@ Contact:	Miru H.40 kernel maintainers
 Description:
 		Read-only detailed OTP error value returned by the existing Oplus
 		short-IC backend. Present when `CONFIG_OPLUS_SHORT_IC_CHECK` is enabled.
+
+What:		/sys/class/oplus_chg/common/mutual_cmd
+Date:		September 2026
+Contact:	Miru H.40 kernel maintainers
+Description:
+		Binary command/reply mailbox used by the ColorOS charger HAL. The ABI
+		is a 264-byte record containing a 32-bit command, a 32-bit payload
+		length, and a 256-byte payload. Reads block until a kernel command is
+		available. On hotdogg no wireless-auth producer is enabled, so the
+		mailbox normally remains idle.

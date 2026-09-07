@@ -8,6 +8,7 @@
 #include <linux/device.h>
 #include <linux/nls.h>
 #include <linux/kdev_t.h>
+#include <linux/wait.h>
 
 #include "oplus_charger.h"
 #include "oplus_gauge.h"
@@ -21,6 +22,22 @@
 static struct class *oplus_chg_class;
 static struct device *oplus_battery_dir;
 static struct device *oplus_wireless_dir;
+static struct device *oplus_common_dir;
+
+#define OPLUS_CHG_CMD_DATA_LEN	256
+
+struct oplus_chg_cmd {
+	unsigned int cmd;
+	unsigned int data_size;
+	unsigned char data_buf[OPLUS_CHG_CMD_DATA_LEN];
+};
+
+static DECLARE_WAIT_QUEUE_HEAD(oplus_mutual_read_wq);
+static DEFINE_MUTEX(oplus_mutual_read_lock);
+static DEFINE_MUTEX(oplus_mutual_data_lock);
+static struct oplus_chg_cmd oplus_mutual_cmd;
+static bool oplus_mutual_cmd_pending;
+static bool oplus_mutual_stopping;
 
 /**********************************************************************
 * battery device nodes
@@ -397,6 +414,143 @@ static int oplus_battery_dir_create(struct oplus_chg_chip *chip)
 }
 
 /**********************************************************************
+* common device nodes
+**********************************************************************/
+static ssize_t mutual_cmd_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct oplus_chg_chip *chip;
+	int rc;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(dev);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	mutex_lock(&oplus_mutual_read_lock);
+	rc = wait_event_interruptible(oplus_mutual_read_wq,
+			READ_ONCE(oplus_mutual_cmd_pending) ||
+			READ_ONCE(oplus_mutual_stopping));
+	if (rc) {
+		mutex_unlock(&oplus_mutual_read_lock);
+		return rc;
+	}
+	if (READ_ONCE(oplus_mutual_stopping)) {
+		mutex_unlock(&oplus_mutual_read_lock);
+		return -ENODEV;
+	}
+
+	mutex_lock(&oplus_mutual_data_lock);
+	oplus_mutual_cmd_pending = false;
+	memcpy(buf, &oplus_mutual_cmd, sizeof(oplus_mutual_cmd));
+	mutex_unlock(&oplus_mutual_data_lock);
+	mutex_unlock(&oplus_mutual_read_lock);
+
+	return sizeof(oplus_mutual_cmd);
+}
+
+static ssize_t mutual_cmd_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct oplus_chg_chip *chip;
+	struct oplus_chg_cmd cmd;
+
+	chip = (struct oplus_chg_chip *)dev_get_drvdata(dev);
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+	if (count != sizeof(struct oplus_chg_cmd))
+		return -EINVAL;
+
+	memcpy(&cmd, buf, sizeof(cmd));
+	if (cmd.data_size > OPLUS_CHG_CMD_DATA_LEN)
+		return -EINVAL;
+
+	/*
+	 * hotdogg has no wireless-auth command producer. Keep the reply side
+	 * wire-compatible so the ColorOS charger HAL can open the 9R mailbox
+	 * without changing the stable H.40 charging policy.
+	 */
+	return count;
+}
+static DEVICE_ATTR_RW(mutual_cmd);
+
+static struct device_attribute *oplus_common_attributes[] = {
+	&dev_attr_mutual_cmd,
+	NULL
+};
+
+static void oplus_common_dir_destroy(void)
+{
+	struct device_attribute **attrs;
+	struct device_attribute *attr;
+	dev_t devt;
+
+	if (IS_ERR_OR_NULL(oplus_common_dir))
+		return;
+
+	WRITE_ONCE(oplus_mutual_stopping, true);
+	wake_up_all(&oplus_mutual_read_wq);
+
+	attrs = oplus_common_attributes;
+	while ((attr = *attrs++))
+		device_remove_file(oplus_common_dir, attr);
+
+	devt = oplus_common_dir->devt;
+	device_destroy(oplus_common_dir->class, devt);
+	unregister_chrdev_region(devt, 1);
+	oplus_common_dir = NULL;
+}
+
+static int oplus_common_dir_create(struct oplus_chg_chip *chip)
+{
+	dev_t devt;
+	int i;
+	int status;
+
+	if (!chip) {
+		chg_err("chip is NULL\n");
+		return -EINVAL;
+	}
+
+	status = alloc_chrdev_region(&devt, 0, 1, "common");
+	if (status < 0)
+		return status;
+
+	oplus_common_dir = device_create(oplus_chg_class, NULL, devt, NULL,
+			"%s", "common");
+	if (IS_ERR(oplus_common_dir)) {
+		status = PTR_ERR(oplus_common_dir);
+		oplus_common_dir = NULL;
+		unregister_chrdev_region(devt, 1);
+		return status;
+	}
+
+	oplus_common_dir->devt = devt;
+	dev_set_drvdata(oplus_common_dir, chip);
+	WRITE_ONCE(oplus_mutual_cmd_pending, false);
+	WRITE_ONCE(oplus_mutual_stopping, false);
+
+	for (i = 0; oplus_common_attributes[i]; i++) {
+		status = device_create_file(oplus_common_dir,
+				oplus_common_attributes[i]);
+		if (status) {
+			while (--i >= 0)
+				device_remove_file(oplus_common_dir,
+						oplus_common_attributes[i]);
+			device_destroy(oplus_common_dir->class, devt);
+			unregister_chrdev_region(devt, 1);
+			oplus_common_dir = NULL;
+			return status;
+		}
+	}
+
+	return 0;
+}
+
+/**********************************************************************
 * wireless device nodes
 **********************************************************************/
 static ssize_t max_w_power_show(struct device *dev, struct device_attribute *attr,
@@ -523,12 +677,17 @@ int oplus_chg_configfs_init(struct oplus_chg_chip *chip)
 	if (status < 0)
 		chg_err("oplus_wireless_dir_create fail!\n");
 
+	status = oplus_common_dir_create(chip);
+	if (status < 0)
+		chg_err("oplus_common_dir_create fail!\n");
+
 	return 0;
 }
 EXPORT_SYMBOL(oplus_chg_configfs_init);
 
 int oplus_chg_configfs_exit(void)
 {
+	oplus_common_dir_destroy();
 	oplus_wireless_dir_destroy();
 	oplus_battery_dir_destroy();
 
