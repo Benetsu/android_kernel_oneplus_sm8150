@@ -1,0 +1,27 @@
+What:		/proc/<pid>/jank_info
+Date:		September 2026
+Contact:	KAI-Miru
+Description:
+	Per-task opt-in scheduler-latency accounting used by the Oplus
+	health/performance stack. Writing 1 starts accounting for the selected
+	task. Writing 0 stops accounting and clears that task's accumulated
+	runnable, running, uninterruptible, I/O-wait, binder, futex, mutex, and
+	rwsem timing. Reading returns the accumulated values in milliseconds.
+
+What:		/proc/oplus_healthinfo/alloc_wait
+Date:		September 2026
+Contact:	KAI-Miru
+Description:
+	Read-only foreground, UX, and total page-allocation wait statistics,
+	including high/low wait counts, maxima, allocation orders, and the
+	healthinfo control, logging, and trigger state.
+
+What:		/sys/module/memory_monitor/parameters/ion_wait_h_ms
+What:		/sys/module/memory_monitor/parameters/ion_wait_l_ms
+What:		/sys/module/memory_monitor/parameters/ion_wait_log_ms
+Date:		September 2026
+Contact:	KAI-Miru
+Description:
+	Read/write thresholds, in milliseconds, for Oplus ION allocation-wait
+	accounting and optional healthinfo logging. Donor defaults are 500, 100,
+	and 1000 milliseconds respectively.
