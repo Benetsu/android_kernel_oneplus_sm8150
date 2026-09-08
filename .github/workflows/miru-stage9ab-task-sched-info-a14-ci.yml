@@ -22,8 +22,8 @@ jobs:
     env:
       SOURCE_SHA: 7b13faaa506e5923b49164f780da1b3a06dec84b
       MODULES_REPAIR_SHA: c629f2a1a95c7ca4f74ff700905077710b5ab78a
-      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave37-2-charger-configfs-probe-hook-ci1+
-      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave37-2-charger-configfs-probe-hook-ci1
+      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave37-2-chg-cfgfs-ci1+
+      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave37-2-chg-cfgfs-ci1
 
     steps:
       - name: Checkout Wave 37.2 charger configfs probe hook source
@@ -83,13 +83,13 @@ jobs:
               '== Miru H.40 Android 4.14.190 CI build ==':
                   '== Miru H.40 Wave 37.2 charger configfs probe hook stable build ==',
               'KERNEL_LOCALVERSION=-miru-h40-lts190-ci1':
-                  'KERNEL_LOCALVERSION=-miru-h40-wave37-2-charger-configfs-probe-hook-ci1',
+                  'KERNEL_LOCALVERSION=-miru-h40-wave37-2-chg-cfgfs-ci1',
               'CONFIG_LOCALVERSION="-miru-h40-lts190-ci1"':
-                  'CONFIG_LOCALVERSION="-miru-h40-wave37-2-charger-configfs-probe-hook-ci1"',
+                  'CONFIG_LOCALVERSION="-miru-h40-wave37-2-chg-cfgfs-ci1"',
               'export SKIP_PRODUCTION_DTS=1':
                   'export SKIP_PRODUCTION_DTS=0',
               "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 '^Linux version 4\\.14\\.190-' || true)\"":
-                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave37-2-charger-configfs-probe-hook-ci1+' || true)\"",
+                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave37-2-chg-cfgfs-ci1+' || true)\"",
               'echo "Clean kernel build and output validation: PASS"': final,
           }
           for old, new in replacements.items():
