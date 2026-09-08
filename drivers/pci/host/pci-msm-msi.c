@@ -15,6 +15,7 @@
  */
 
 #include <linux/interrupt.h>
+#include <linux/bitmap.h>
 #include <linux/iommu.h>
 #include <linux/ipc_logging.h>
 #include <linux/irqchip/chained_irq.h>
@@ -368,6 +369,7 @@ static int msm_msi_irq_domain_alloc(struct irq_domain *domain,
 	struct msm_msi *msi = domain->host_data;
 	struct msm_msi_client *tmp, *client = NULL;
 	struct device *dev = ((msi_alloc_info_t *)args)->desc->dev;
+	unsigned long align_mask;
 	int i, ret = 0;
 	int pos;
 
@@ -385,11 +387,25 @@ static int msm_msi_irq_domain_alloc(struct irq_domain *domain,
 		goto out;
 	}
 
+	/*
+	 * QGIC-backed MSI controllers do not require naturally aligned
+	 * allocations.  Requiring alignment can reject a usable contiguous
+	 * range in the small 32-vector pool used by the external SDX55 modem.
+	 * Keep the existing Synopsys requirement, where the vector position is
+	 * also the value programmed into the controller.
+	 */
+	align_mask = msi->type == MSM_MSI_TYPE_QCOM ? 0 : nr_irqs - 1;
 	pos = bitmap_find_next_zero_area(msi->bitmap, msi->nr_virqs, 0,
-					nr_irqs, nr_irqs - 1);
+					nr_irqs, align_mask);
 	if (pos < msi->nr_virqs) {
 		bitmap_set(msi->bitmap, pos, nr_irqs);
 	} else {
+		dev_err(msi->dev,
+			"MSI: no space for %u IRQs (used %u/%d, type %s, align 0x%lx)\n",
+			nr_irqs, bitmap_weight(msi->bitmap, msi->nr_virqs),
+			msi->nr_virqs,
+			msi->type == MSM_MSI_TYPE_QCOM ? "qgic" : "synopsys",
+			align_mask);
 		ret = -ENOSPC;
 		goto out;
 	}

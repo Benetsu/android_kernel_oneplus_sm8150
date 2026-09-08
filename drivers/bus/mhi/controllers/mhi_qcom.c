@@ -857,7 +857,7 @@ int mhi_pci_probe(struct pci_dev *pci_dev,
 
 	ret = mhi_arch_pcie_init(mhi_cntrl);
 	if (ret)
-		return ret;
+		goto error_arch_init;
 
 	ret = mhi_arch_iommu_init(mhi_cntrl);
 	if (ret)
@@ -888,6 +888,10 @@ error_init_pci:
 
 error_iommu_init:
 	mhi_arch_pcie_deinit(mhi_cntrl);
+
+error_arch_init:
+	mhi_dev->powered_on = false;
+	mhi_arch_pcie_init_cleanup(mhi_cntrl);
 
 	return ret;
 }

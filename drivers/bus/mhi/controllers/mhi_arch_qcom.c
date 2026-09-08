@@ -43,6 +43,9 @@ struct arch_info {
 	struct mhi_device *boot_dev;
 	struct notifier_block pm_notifier;
 	struct completion pm_completion;
+	bool pcie_event_registered;
+	bool pm_notifier_registered;
+	bool esoc_hook_registered;
 };
 
 /* ipc log markings */
@@ -177,9 +180,19 @@ static void mhi_arch_pci_link_state_cb(struct msm_pcie_notify *notify)
 static int mhi_arch_esoc_ops_power_on(void *priv, unsigned int flags)
 {
 	struct mhi_controller *mhi_cntrl = priv;
-	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
-	struct pci_dev *pci_dev = mhi_dev->pci_dev;
+	struct mhi_dev *mhi_dev;
+	struct pci_dev *pci_dev;
 	int ret;
+
+	if (!mhi_cntrl)
+		return -ENODEV;
+
+	mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
+	if (!mhi_dev || !mhi_dev->pci_dev || !mhi_dev->arch_info) {
+		MHI_CNTRL_ERR("Reject power on for uninitialized PCIe state\n");
+		return -ENODEV;
+	}
+	pci_dev = mhi_dev->pci_dev;
 
 	mutex_lock(&mhi_cntrl->pm_mutex);
 	if (mhi_dev->powered_on) {
@@ -509,12 +522,18 @@ int mhi_arch_pcie_init(struct mhi_controller *mhi_cntrl)
 		if (ret)
 			MHI_CNTRL_ERR(
 				"Failed to reg. for link up notification\n");
+		else
+			arch_info->pcie_event_registered = true;
 
 		init_completion(&arch_info->pm_completion);
 
 		/* register PM notifier to get post resume events */
 		arch_info->pm_notifier.notifier_call = mhi_arch_pm_notifier;
-		register_pm_notifier(&arch_info->pm_notifier);
+		ret = register_pm_notifier(&arch_info->pm_notifier);
+		if (ret)
+			MHI_CNTRL_ERR("Failed to register PM notifier\n");
+		else
+			arch_info->pm_notifier_registered = true;
 
 		/*
 		 * Mark as completed at initial boot-up to allow ESOC power on
@@ -544,6 +563,8 @@ int mhi_arch_pcie_init(struct mhi_controller *mhi_cntrl)
 							esoc_ops);
 			if (ret)
 				MHI_CNTRL_ERR("Failed to register esoc ops\n");
+			else
+				arch_info->esoc_hook_registered = true;
 		}
 
 		/*
@@ -577,6 +598,63 @@ int mhi_arch_pcie_init(struct mhi_controller *mhi_cntrl)
 void mhi_arch_pcie_deinit(struct mhi_controller *mhi_cntrl)
 {
 	mhi_arch_set_bus_request(mhi_cntrl, 0);
+}
+
+/*
+ * Tear down only the registrations created by an unsuccessful PCI probe.
+ * Normal ESOC power-off deliberately keeps these registrations so it can
+ * receive the following power-on event.
+ */
+void mhi_arch_pcie_init_cleanup(struct mhi_controller *mhi_cntrl)
+{
+	struct mhi_dev *mhi_dev;
+	struct arch_info *arch_info;
+	struct device *dev;
+
+	if (!mhi_cntrl)
+		return;
+
+	mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
+	if (!mhi_dev || !mhi_dev->arch_info || !mhi_dev->pci_dev)
+		return;
+
+	arch_info = mhi_dev->arch_info;
+	dev = &mhi_dev->pci_dev->dev;
+
+	if (arch_info->esoc_hook_registered) {
+		esoc_unregister_client_hook(arch_info->esoc_client,
+					    &arch_info->esoc_ops);
+		arch_info->esoc_hook_registered = false;
+	}
+	if (!IS_ERR_OR_NULL(arch_info->esoc_client)) {
+		devm_unregister_esoc_client(dev, arch_info->esoc_client);
+		arch_info->esoc_client = NULL;
+	}
+	if (arch_info->pm_notifier_registered) {
+		unregister_pm_notifier(&arch_info->pm_notifier);
+		arch_info->pm_notifier_registered = false;
+	}
+	if (arch_info->pcie_event_registered) {
+		msm_pcie_deregister_event(&arch_info->pcie_reg_event);
+		arch_info->pcie_event_registered = false;
+	}
+	if (arch_info->bus_client) {
+		msm_bus_scale_unregister_client(arch_info->bus_client);
+		arch_info->bus_client = 0;
+	}
+	if (arch_info->tsync_ipc_log)
+		ipc_log_context_destroy(arch_info->tsync_ipc_log);
+	if (mhi_cntrl->cntrl_log_buf)
+		ipc_log_context_destroy(mhi_cntrl->cntrl_log_buf);
+	if (mhi_cntrl->log_buf)
+		ipc_log_context_destroy(mhi_cntrl->log_buf);
+
+	arch_info->tsync_ipc_log = NULL;
+	mhi_cntrl->tsync_log = NULL;
+	mhi_cntrl->cntrl_log_buf = NULL;
+	mhi_cntrl->log_buf = NULL;
+	mhi_dev->arch_info = NULL;
+	devm_kfree(dev, arch_info);
 }
 
 static struct dma_iommu_mapping *mhi_arch_create_iommu_mapping(
