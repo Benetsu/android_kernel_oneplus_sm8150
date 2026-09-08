@@ -365,6 +365,9 @@ int msi_domain_alloc_irqs(struct irq_domain *domain, struct device *dev,
 					       dev_to_node(dev), &arg, false,
 					       desc->affinity);
 		if (virq < 0) {
+			dev_err(dev,
+				"MSI: IRQ-domain allocation of %u vectors failed: %d\n",
+				desc->nvec_used, virq);
 			ret = -ENOSPC;
 			if (ops->handle_error)
 				ret = ops->handle_error(domain, desc, ret);

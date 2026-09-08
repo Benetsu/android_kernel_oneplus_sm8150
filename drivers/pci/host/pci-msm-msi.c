@@ -387,14 +387,8 @@ static int msm_msi_irq_domain_alloc(struct irq_domain *domain,
 		goto out;
 	}
 
-	/*
-	 * QGIC-backed MSI controllers do not require naturally aligned
-	 * allocations.  Requiring alignment can reject a usable contiguous
-	 * range in the small 32-vector pool used by the external SDX55 modem.
-	 * Keep the existing Synopsys requirement, where the vector position is
-	 * also the value programmed into the controller.
-	 */
-	align_mask = msi->type == MSM_MSI_TYPE_QCOM ? 0 : nr_irqs - 1;
+	/* PCI multi-message MSI requires a naturally aligned vector block. */
+	align_mask = nr_irqs - 1;
 	pos = bitmap_find_next_zero_area(msi->bitmap, msi->nr_virqs, 0,
 					nr_irqs, align_mask);
 	if (pos < msi->nr_virqs) {

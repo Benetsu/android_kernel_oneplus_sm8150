@@ -142,7 +142,13 @@ static int mhi_init_pci_dev(struct mhi_controller *mhi_cntrl)
 	ret = pci_alloc_irq_vectors(pci_dev, mhi_cntrl->msi_required,
 				    mhi_cntrl->msi_required, PCI_IRQ_MSI);
 	if (IS_ERR_VALUE((ulong)ret) || ret < mhi_cntrl->msi_required) {
-		MHI_CNTRL_ERR("Failed to enable MSI, ret:%d\n", ret);
+		int capable = pci_msi_vec_count(pci_dev);
+
+		MHI_CNTRL_ERR(
+			"Failed to enable MSI, ret:%d requested:%u capable:%d bdf:%04x:%02x:%02x.%u\n",
+			ret, mhi_cntrl->msi_required, capable,
+			pci_domain_nr(pci_dev->bus), pci_dev->bus->number,
+			PCI_SLOT(pci_dev->devfn), PCI_FUNC(pci_dev->devfn));
 		goto error_req_msi;
 	}
 
@@ -857,7 +863,7 @@ int mhi_pci_probe(struct pci_dev *pci_dev,
 
 	ret = mhi_arch_pcie_init(mhi_cntrl);
 	if (ret)
-		goto error_arch_init;
+		return ret;
 
 	ret = mhi_arch_iommu_init(mhi_cntrl);
 	if (ret)
@@ -888,10 +894,6 @@ error_init_pci:
 
 error_iommu_init:
 	mhi_arch_pcie_deinit(mhi_cntrl);
-
-error_arch_init:
-	mhi_dev->powered_on = false;
-	mhi_arch_pcie_init_cleanup(mhi_cntrl);
 
 	return ret;
 }
