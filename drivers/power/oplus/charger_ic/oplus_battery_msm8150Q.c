@@ -61,6 +61,7 @@
 #include "../charger_ic/oplus_bq25882.h"
 #include "../gauge_ic/oplus_bq27541.h"
 #include "op_charge.h"
+#include "../oplus_configfs.h"
 
 int g_rerun_num = 0;
 struct oplus_chg_chip *g_oplus_chip = NULL;
@@ -15621,6 +15622,8 @@ static int smb5_probe(struct platform_device *pdev)
 #endif
 	if (oplus_usbtemp_check_is_support() == true )
 		oplus_usbtemp_thread_init();
+
+	oplus_chg_configfs_init(oplus_chip);
 #endif
 	smb5_create_debugfs(chip);
 
