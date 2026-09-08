@@ -609,6 +609,10 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 	tsk->fail_nth = 0;
 #endif
 
+#ifdef CONFIG_OPLUS_FEATURE_ABNORMAL_FLAG
+	tsk->abnormal_flag = 0;
+#endif
+
 	return tsk;
 
 free_stack:

@@ -1458,6 +1458,10 @@ struct task_struct {
 	int im_flag;
 #endif
 
+#ifdef CONFIG_OPLUS_FEATURE_ABNORMAL_FLAG
+	int abnormal_flag;
+#endif
+
 #if IS_ENABLED(CONFIG_OPLUS_LOCKING_STRATEGY)
 	struct locking_info lkinfo;
 #endif

@@ -1,0 +1,21 @@
+What:		/proc/task_overload/abnormal_task
+Date:		2022
+Contact:	OPLUS scheduler and power-management maintainers
+Description:
+		Reports third-party tasks that have sustained high utilization on
+		the maximum-capacity CPU cluster while that cluster is at its
+		maximum frequency and the middle cluster has spare capacity. Each
+		record contains pid, uid, limiting state, command name and time.
+
+		Writing the exact string FINISH_READ clears the bounded report.
+		ColorOS power-stats/MIDAS userspace consumes this interface.
+
+What:		/proc/task_overload/skip_goplus_enabled
+Date:		2022
+Contact:	OPLUS scheduler and power-management maintainers
+Description:
+		Read/write control for donor GOPLUS abnormal-task placement. Zero
+		keeps monitoring and reporting active without restricting CPU
+		placement. A nonzero value also prevents qualifying non-UX tasks
+		from continuing to occupy the maximum-capacity cluster.
+

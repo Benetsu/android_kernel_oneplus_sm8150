@@ -1,0 +1,6 @@
+config OPLUS_FEATURE_ABNORMAL_FLAG
+	bool "OPLUS abnormal task detection"
+	default n
+	help
+	  Detect sustained high-load tasks and expose the bounded MIDAS
+	  abnormal-task report through /proc/task_overload.
