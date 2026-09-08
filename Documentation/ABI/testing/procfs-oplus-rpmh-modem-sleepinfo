@@ -1,0 +1,12 @@
+What:		/proc/rpmh_modem/sleepinfo
+Date:		December 2019
+Contact:	OPLUS power-management maintainers
+Description:
+		Bounded 100 KiB text hand-off buffer for modem subsystem sleep
+		statistics. The ColorOS qmi_master_stats_service appends reports
+		to this node and the power-monitoring stack reads the accumulated
+		text. Writing the exact OPLUS_MARK_RESTART command resets the
+		buffer to a restart marker.
+
+		The backing allocation is capped and additional data is truncated
+		once the buffer is full.

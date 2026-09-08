@@ -768,6 +768,13 @@ config QTI_RPM_STATS_LOG
 	  the low power modes that RPM enters. The drivers outputs the message
 	  via a debugfs node.
 
+config RPMH_MODEM_SLEEPINFO_BUFFER
+	bool "OPLUS RPMh modem sleepinfo buffer"
+	default y
+	help
+	  Create /proc/rpmh_modem/sleepinfo as the bounded hand-off buffer used
+	  by the OPLUS power-monitoring service for modem sleep statistics.
+
 config QTI_DDR_STATS_LOG
 	bool "Qualcomm Technologies DDR Stats Driver"
 	depends on QTI_RPMH_API

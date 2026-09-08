@@ -94,6 +94,7 @@ obj-$(CONFIG_MSM_IDLE_STATS)	+= lpm-stats.o
 obj-$(CONFIG_QCOM_FSA4480_I2C)	+= fsa4480-i2c.o
 
 #ifdef OPLUS_FEATURE_POWERINFO_RPMH
+obj-$(CONFIG_RPMH_MODEM_SLEEPINFO_BUFFER) += rpmh_modem_sleepinfo.o
 obj-$(CONFIG_QTI_RPMH_API) += rpm_stats.o
 obj-$(CONFIG_QTI_RPMH_API) += rpmh_master_stat.o
 obj-$(CONFIG_QTI_DDR_STATS_LOG) += ddr_stats.o
