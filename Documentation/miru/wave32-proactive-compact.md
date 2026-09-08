@@ -19,6 +19,9 @@ Reading the node returns three decimal fields:
 The node is policy telemetry. Reading it does not compact memory. Writes only
 change the two scoring parameters, matching the donor ABI.
 
-This closes a runtime/documentation discrepancy: the path was already present
-in Miru's ABI document, while the Wave 31.5 phone repeatedly logged that it did
-not exist and OSense therefore treated memory as not fragmented.
+Wave 37.1 removed an older in-tree compatibility implementation which had
+accidentally remained enabled alongside this donor implementation. Both
+objects used the same built-in module identity and parameter names, causing a
+duplicate sysfs-parameter failure during early kernel initialization. The 9R
+external implementation and its `CONFIG_PROACTIVE_COMPACT=y` wiring are the
+sole provider after that correction.

@@ -106,16 +106,6 @@ config OPLUS_SCHED
 	  tasks and expose the task_info/task_sched_info control plane.  The
 	  scheduler fast paths remain disabled until userspace enables it.
 
-config OPLUS_PROACTIVE_COMPACT
-	bool "Oplus proactive-compaction telemetry ABI"
-	depends on PROC_FS && COMPACTION
-	default n
-	help
-	  Expose /proc/oplus_mem/fragmentation_index using the Android 14
-	  OnePlus 9R ABI.  This reports the node-0 external-fragmentation
-	  decision and accepts only the donor's two local scoring tunables; it
-	  does not initiate compaction or add reclaim-path hooks.
-
 config OPLUS_STORAGE_LOG
 	bool "Oplus storage diagnostic log ABI"
 	depends on PROC_FS
