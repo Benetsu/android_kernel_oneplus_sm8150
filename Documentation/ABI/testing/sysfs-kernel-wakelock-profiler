@@ -1,0 +1,38 @@
+What:		/sys/kernel/wakelock_profiler/ap_resume_reason_stastics
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only OnePlus standby-resume attribution counters. Each line
+		contains a wake-source category name followed by its count. The
+		vendor spelling of "stastics" is part of the userspace ABI.
+
+What:		/sys/kernel/wakelock_profiler/wakeup_stastisc_reset
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read/write reset control for the resume attribution counters. Reads
+		return "reset". Write the string "reset" to clear the counters.
+		The vendor spelling of "stastisc" is part of the userspace ABI.
+
+What:		/sys/kernel/wakelock_profiler/modem_resume_reason_stastics
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only leading modem wake reason. The result is exported in the
+		vendor NAME:COUNT:TOTAL format. The vendor spelling of
+		"stastics" is part of the userspace ABI.
+
+What:		/sys/kernel/wakelock_profiler/kernel_time
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only accumulated kernel wakelock time in milliseconds. Writing
+		"reset" starts a new accumulation interval.
+
+What:		/sys/kernel/wakelock_profiler/active_max
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only longest active wakelocks, reported with name, duration in
+		milliseconds, and rate. Writing "reset" clears the active-maximum
+		statistics.

@@ -500,11 +500,13 @@ static void gic_show_resume_irq(struct gic_chip_data *gic)
 		}
 #endif /* OPLUS_FEATURE_MODEM_DATA_NWPOWER */
 
-		#ifdef OPLUS_FEATURE_POWERINFO_STANDBY
-		do {
-			wakeup_reasons_statics(name, WS_CNT_MODEM|WS_CNT_WLAN|WS_CNT_ADSP|WS_CNT_CDSP|WS_CNT_SLPI);
-		} while(0);
-		#endif /* OPLUS_FEATURE_POWERINFO_STANDBY */
+#ifdef OPLUS_FEATURE_POWERINFO_STANDBY
+		if (!strncmp(name, IRQ_NAME_GLINK, strlen(IRQ_NAME_GLINK)))
+			wakeup_reasons_statics(IRQ_NAME_GLINK, WS_CNT_GLINK);
+		wakeup_reasons_statics(name, WS_CNT_MODEM | WS_CNT_WLAN |
+				       WS_CNT_ADSP | WS_CNT_CDSP |
+				       WS_CNT_SLPI);
+#endif /* OPLUS_FEATURE_POWERINFO_STANDBY */
 	}
 }
 
