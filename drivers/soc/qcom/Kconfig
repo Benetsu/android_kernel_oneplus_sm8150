@@ -760,13 +760,12 @@ config QCOM_QDSS_BRIDGE
 
 config QTI_RPM_STATS_LOG
 	bool "Qualcomm Technologies RPM Stats Driver"
-	depends on DEBUG_FS
+	depends on QTI_RPMH_API
 	default n
 	help
-	  This option enables a driver which reads RPM messages from a shared
-	  memory location. These messages provide statistical information about
-	  the low power modes that RPM enters. The drivers outputs the message
-	  via a debugfs node.
+	  Enable the RPMh system and master residency drivers. The OPLUS Android
+	  implementation exports the statistics below /sys/power/system_sleep
+	  and /sys/power/rpmh_stats, so it does not require debugfs.
 
 config RPMH_MODEM_SLEEPINFO_BUFFER
 	bool "OPLUS RPMh modem sleepinfo buffer"

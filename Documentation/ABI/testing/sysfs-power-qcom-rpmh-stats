@@ -1,0 +1,29 @@
+What:		/sys/power/system_sleep/stats
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only Qualcomm RPMh system-sleep statistics. Each firmware
+		record includes its mode, entry count, last-mode duration, elapsed
+		time since the previous exit and accumulated sleep duration.
+
+What:		/sys/power/system_sleep/oplus_rpmh_stats
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only compact OPLUS view of the AOSS deep-sleep and CX-collapse
+		counters, exported as vlow:COUNT:DURATION_MS and
+		vmin:COUNT:DURATION_MS.
+
+What:		/sys/power/rpmh_stats/master_stats
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only APSS and subsystem RPMh residency records. Available
+		masters can include MPSS, ADSP, CDSP, SLPI, GPU and DISPLAY.
+
+What:		/sys/power/rpmh_stats/oplus_rpmh_master_stats
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only compact OPLUS master-residency view. Each line uses the
+		NAME:COUNT:DURATION_MS format consumed by the ColorOS power stack.

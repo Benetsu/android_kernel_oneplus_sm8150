@@ -10,6 +10,9 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/errno.h>
+#include <linux/types.h>
+
 #ifdef CONFIG_MSM_BOOT_STATS
 
 #define TIMER_KHZ 32768
@@ -52,8 +55,12 @@ static inline void measure_wake_up_time(void) { };
 
 
 #ifdef OPLUS_FEATURE_POWERINFO_RPMH
-/*#ifdef CONFIG_QTI_RPM_STATS_LOG */
 uint64_t get_sleep_exit_time(void);
+int get_rpmh_deep_sleep_info(u64 *aosd, u64 *cxsd);
 #else
 static inline uint64_t get_sleep_exit_time(void) { return 0; }
+static inline int get_rpmh_deep_sleep_info(u64 *aosd, u64 *cxsd)
+{
+	return -ENODEV;
+}
 #endif

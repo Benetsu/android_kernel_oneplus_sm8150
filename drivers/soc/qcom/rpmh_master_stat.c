@@ -154,7 +154,7 @@ static ssize_t msm_rpmh_master_stats_print_data(char *prvbuf, ssize_t length,
 				(arch_counter_get_cntvct()
 				- record->last_entered);
 #ifndef OPLUS_FEATURE_POWERINFO_RPMH
-	return snprintf(prvbuf, length, "%s\n\tVersion:0x%x\n"
+	return scnprintf(prvbuf, length, "%s\n\tVersion:0x%x\n"
 			"\tSleep Count:0x%x\n"
 			"\tSleep Last Entered At:0x%llx\n"
 			"\tSleep Last Exited At:0x%llx\n"
@@ -163,7 +163,7 @@ static ssize_t msm_rpmh_master_stats_print_data(char *prvbuf, ssize_t length,
 			record->last_entered, record->last_exited,
 			accumulated_duration);
 #else
-	return snprintf(prvbuf, length, "%s\n\tVersion:0x%x\n"
+	return scnprintf(prvbuf, length, "%s\n\tVersion:0x%x\n"
 			"\tSleep Count:0x%x\n"
 			"\tSleep Last Entered At:0x%llx\n"
 			"\tSleep Last Exited At:0x%llx\n"
@@ -245,6 +245,48 @@ static ssize_t  oplus_rpmh_master_stats_show(struct kobject *kobj,
 
 	return length;
 }
+#endif /* OPLUS_FEATURE_POWERINFO_RPMH */
+
+#ifdef OPLUS_FEATURE_POWERINFO_RPMH
+static u64 oplus_rpmh_master_get_sleeptime(
+				struct msm_rpmh_master_stats *record)
+{
+	u64 accumulated_duration = record->accumulated_duration;
+
+	if (record->last_entered > record->last_exited)
+		accumulated_duration += arch_counter_get_cntvct() -
+					record->last_entered;
+
+	return get_time_in_msec(accumulated_duration);
+}
+
+int oplus_subsystem_sleeptime(char *name, u64 *sleeptime)
+{
+	struct msm_rpmh_master_stats *record;
+	size_t size;
+	int i;
+
+	if (!name || !sleeptime)
+		return 0;
+
+	mutex_lock(&oplus_rpmh_stats_mutex);
+	for (i = 0; i < ARRAY_SIZE(rpmh_masters); i++) {
+		if (strcmp(rpmh_masters[i].master_name, name))
+			continue;
+
+		record = qcom_smem_get(rpmh_masters[i].pid,
+				       rpmh_masters[i].smem_id, &size);
+		if (!IS_ERR_OR_NULL(record) && size >= sizeof(*record)) {
+			*sleeptime = oplus_rpmh_master_get_sleeptime(record);
+			mutex_unlock(&oplus_rpmh_stats_mutex);
+			return 1;
+		}
+		break;
+	}
+	mutex_unlock(&oplus_rpmh_stats_mutex);
+	return 0;
+}
+EXPORT_SYMBOL(oplus_subsystem_sleeptime);
 #endif /* OPLUS_FEATURE_POWERINFO_RPMH */
 
 static inline void msm_rpmh_apss_master_stats_update(

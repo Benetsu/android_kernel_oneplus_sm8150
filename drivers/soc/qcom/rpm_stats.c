@@ -28,6 +28,7 @@
 
 #ifdef OPLUS_FEATURE_POWERINFO_RPMH
 void __iomem *rpm_phys_addr = NULL;
+static u32 num_records_backup;
 #endif /* OPLUS_FEATURE_POWERINFO_RPMH */
 
 #define GET_PDATA_OF_ATTR(attr) \
@@ -73,6 +74,9 @@ struct msm_rpmstats_kobj_attr {
 	struct kobject *kobj;
 	struct kobj_attribute ka;
 	struct msm_rpmstats_platform_data *pd;
+#ifdef OPLUS_FEATURE_POWERINFO_RPMH
+	struct msm_rpmstats_kobj_attr *oplus_attr;
+#endif
 };
 
 static inline u64 get_time_in_sec(u64 counter)
@@ -244,6 +248,29 @@ static inline int  oplus_rpmstats_copy_stats(
 }
 #endif /* OPLUS_FEATURE_POWERINFO_RPMH */
 
+#ifdef OPLUS_FEATURE_POWERINFO_RPMH
+int get_rpmh_deep_sleep_info(u64 *aosd, u64 *cxsd)
+{
+	u64 accumulated_aosd;
+	u64 accumulated_cxsd;
+
+	if (!aosd || !cxsd)
+		return -EINVAL;
+	if (!rpm_phys_addr || num_records_backup < RPM_STATS_NUM_REC)
+		return -ENODEV;
+
+	accumulated_aosd = msm_rpmstats_read_quad_register(rpm_phys_addr,
+			0, offsetof(struct msm_rpm_stats_data, accumulated));
+	accumulated_cxsd = msm_rpmstats_read_quad_register(rpm_phys_addr,
+			1, offsetof(struct msm_rpm_stats_data, accumulated));
+
+	*aosd = get_time_in_msec(accumulated_aosd);
+	*cxsd = get_time_in_msec(accumulated_cxsd);
+	return 0;
+}
+EXPORT_SYMBOL(get_rpmh_deep_sleep_info);
+#endif /* OPLUS_FEATURE_POWERINFO_RPMH */
+
 static ssize_t msm_rpmstats_populate_stats(void)
 {
 	struct msm_rpmstats_private_data prvdata;
@@ -367,10 +394,16 @@ static int msm_rpmstats_create_sysfs(struct platform_device *pdev,
 	rpms_ka->ka.store = NULL;
 
 	ret = sysfs_create_file(rpmstats_kobj, &rpms_ka->ka.attr);
-	platform_set_drvdata(pdev, rpms_ka);
+	if (ret) {
+		kfree(rpms_ka);
+		kobject_put(rpmstats_kobj);
+		goto fail;
+	}
 #ifdef OPLUS_FEATURE_POWERINFO_RPMH
      oplus_rpms_ka = kzalloc(sizeof(* oplus_rpms_ka), GFP_KERNEL);
 	if (! oplus_rpms_ka) {
+		sysfs_remove_file(rpmstats_kobj, &rpms_ka->ka.attr);
+		kfree(rpms_ka);
 		kobject_put(rpmstats_kobj);
 		ret = -ENOMEM;
 		goto fail;
@@ -384,7 +417,16 @@ static int msm_rpmstats_create_sysfs(struct platform_device *pdev,
 	oplus_rpms_ka->ka.store = NULL;
 
 	ret = sysfs_create_file(rpmstats_kobj, & oplus_rpms_ka->ka.attr);
+	if (ret) {
+		kfree(oplus_rpms_ka);
+		sysfs_remove_file(rpmstats_kobj, &rpms_ka->ka.attr);
+		kfree(rpms_ka);
+		kobject_put(rpmstats_kobj);
+		goto fail;
+	}
+	rpms_ka->oplus_attr = oplus_rpms_ka;
 #endif /* OPLUS_FEATURE_POWERINFO_RPMH */
+	platform_set_drvdata(pdev, rpms_ka);
 
 fail:
 	return ret;
@@ -397,6 +439,7 @@ static int msm_rpmstats_probe(struct platform_device *pdev)
 	u32 offset_addr = 0;
 	void __iomem *phys_ptr = NULL;
 	char *key;
+	int ret;
 
 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata)
@@ -427,9 +470,6 @@ static int msm_rpmstats_probe(struct platform_device *pdev)
 	if (of_property_read_u32(pdev->dev.of_node, key, &pdata->num_records))
 		pdata->num_records = RPM_STATS_NUM_REC;
 
-	msm_rpmstats_create_sysfs(pdev, pdata);
-	gpdata = pdata;
-
 #ifdef OPLUS_FEATURE_POWERINFO_RPMH
 	rpm_phys_addr= ioremap_nocache(pdata->phys_addr_base,
 							pdata->phys_size);
@@ -439,7 +479,20 @@ static int msm_rpmstats_probe(struct platform_device *pdev)
 			pdata->phys_size);
 		return -ENODEV;
 	}
+	num_records_backup = pdata->num_records;
 #endif /* OPLUS_FEATURE_POWERINFO_RPMH */
+
+	ret = msm_rpmstats_create_sysfs(pdev, pdata);
+	if (ret) {
+#ifdef OPLUS_FEATURE_POWERINFO_RPMH
+		iounmap(rpm_phys_addr);
+		rpm_phys_addr = NULL;
+		num_records_backup = 0;
+#endif
+		return ret;
+	}
+
+	gpdata = pdata;
 	return 0;
 }
 
@@ -453,9 +506,23 @@ static int msm_rpmstats_remove(struct platform_device *pdev)
 	rpms_ka = (struct msm_rpmstats_kobj_attr *)
 			platform_get_drvdata(pdev);
 
+#ifdef OPLUS_FEATURE_POWERINFO_RPMH
+	if (rpms_ka->oplus_attr) {
+		sysfs_remove_file(rpms_ka->kobj,
+				  &rpms_ka->oplus_attr->ka.attr);
+		kfree(rpms_ka->oplus_attr);
+	}
+	if (rpm_phys_addr) {
+		iounmap(rpm_phys_addr);
+		rpm_phys_addr = NULL;
+	}
+	num_records_backup = 0;
+#endif
 	sysfs_remove_file(rpms_ka->kobj, &rpms_ka->ka.attr);
 	kobject_put(rpms_ka->kobj);
+	kfree(rpms_ka);
 	platform_set_drvdata(pdev, NULL);
+	gpdata = NULL;
 
 	return 0;
 }
