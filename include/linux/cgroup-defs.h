@@ -64,6 +64,8 @@ enum {
 	 * specified at mount time and thus is implemented here.
 	 */
 	CGRP_CPUSET_CLONE_CHILDREN,
+	CGRP_FREEZE,
+	CGRP_FROZEN,
 };
 
 /* cgroup_root->flags */
@@ -260,6 +262,14 @@ struct css_set {
 	struct rcu_head rcu_head;
 };
 
+/* cgroup v2 freezer state, protected by cgroup_mutex and css_set_lock. */
+struct cgroup_freezer_state {
+	bool freeze;
+	int e_freeze;
+	int nr_frozen_descendants;
+	int nr_frozen_tasks;
+};
+
 struct cgroup {
 	/* self css with NULL ->ss, points back to this cgroup */
 	struct cgroup_subsys_state self;
@@ -383,6 +393,9 @@ struct cgroup {
 
 	/* used to store eBPF programs */
 	struct cgroup_bpf bpf;
+
+	/* cgroup v2 freezer state */
+	struct cgroup_freezer_state freezer;
 
 	/* ids of the ancestors at each level including self */
 	int ancestor_ids[];

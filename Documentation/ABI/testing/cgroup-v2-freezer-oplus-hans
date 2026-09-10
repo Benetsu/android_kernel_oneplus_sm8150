@@ -1,0 +1,26 @@
+What:		/cgroup.freeze
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		The cgroup v2 freezer control inherited from the OnePlus 9R
+		Android 14 kernel.  It is present in each non-root cgroup on a
+		cgroup v2 hierarchy.  Writing 1 requests that the cgroup and its
+		descendants freeze; writing 0 releases that request.  Reads return
+		the requested state.
+
+What:		/cgroup.events frozen
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		The "frozen" line in cgroup.events reports 1 only after all
+		eligible tasks and descendants reached the frozen state, and 0
+		otherwise.  State changes generate the normal kernfs notification.
+
+What:		NETLINK_OPLUS_HANS cgroup-v2 capability report
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		After the HANS loopback handshake, the kernel sends a PKG message
+		with code -99.  A FROZEN_TRANS or CPUCTL_TRANS query using target
+		UID -8000 returns the same report.  This matches the OnePlus 9R
+		Android 14 HANS userspace contract and selects cgroup v2 freezing.
