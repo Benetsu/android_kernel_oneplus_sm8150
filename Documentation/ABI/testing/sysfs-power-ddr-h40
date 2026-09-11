@@ -1,0 +1,39 @@
+What:		/sys/power/ddr/abi
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Identifies the active DDR telemetry protocol. H.40 reports
+		"aop-ho1.1-transition-ring".
+
+What:		/sys/power/ddr/transitions
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		A read-only, chronological snapshot of valid records in the H.40
+		AOP H.O.1.1 50-entry DDR transition ring. Event values are 0 for
+		frequency-change start, 1 for flush start, and 2 for completion.
+		Request and clock-plan byte pairs are printed high-nibble/low-nibble.
+		MC and SHUB frequencies come from DDR AOP SMEM item 604 when valid.
+
+What:		/sys/power/ddr/recent_residency
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Residency reconstructed only between completed transitions still
+		present in the bounded 50-event AOP ring. This is a diagnostic window,
+		not lifetime accounting, and deliberately does not use the standard
+		/sys/power/ddr/residency name.
+
+What:		/sys/power/ddr/manager_stats
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		Read-only H.O.1.1 DDR-manager counts, recent clock-plan histories,
+		and maximum transition/flush timing values.
+
+What:		/sys/power/ddr/clock_plans
+Date:		September 2026
+Contact:	KAI-Miru kernel maintainers
+Description:
+		The MC and SHUB clock-plan indices and frequencies decoded from the
+		version 1.0 DDR AOP parameter block in SMEM item 604.

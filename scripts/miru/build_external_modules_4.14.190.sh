@@ -216,6 +216,7 @@ rsync -a --exclude='*.o' --exclude='*.ko' --exclude='*.cmd' \
   --exclude='Module.symvers' --exclude='modules.order' \
   "${SLEEPMON_ROOT}/" "${sleepmon_work}/"
 make -j4 -C "${KERNEL_DIR}" O="${OUT_DIR}" M="${sleepmon_work}" \
+  CC="${CLANG_DIR}/bin/clang" \
   CONFIG_OPLUS_SUBSYS_SLEEP_MONITOR=m \
   KBUILD_EXTRA_SYMBOLS="${CUMULATIVE_SYMVERS}" modules \
   2>&1 | tee "${REPORT_DIR}/oplus_subsys_sleep_monitor.log"

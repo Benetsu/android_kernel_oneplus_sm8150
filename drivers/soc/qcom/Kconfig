@@ -781,6 +781,16 @@ config QTI_DDR_STATS_LOG
 	  Read DDR low-power and frequency-residency statistics exported by
 	  the AOP firmware and expose them through /sys/power/ddr/residency.
 
+config QTI_H40_DDR_STATS_LOG
+	bool "Qualcomm AOP H.O.1.1 DDR transition decoder"
+	depends on QTI_RPMH_API && QCOM_SMEM
+	default y
+	help
+	  Decode the bounded DDR transition ring exported by the H.40 AOP
+	  H.O.1.1 firmware and resolve its clock-plan indices through SMEM 604.
+	  This deliberately does not impersonate the newer cumulative H.O.2.0
+	  /sys/power/ddr/residency ABI.
+
 config MSM_CDSP_LOADER
 	tristate "CDSP loader support"
 	help

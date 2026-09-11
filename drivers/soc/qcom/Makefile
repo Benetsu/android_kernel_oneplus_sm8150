@@ -98,6 +98,7 @@ obj-$(CONFIG_RPMH_MODEM_SLEEPINFO_BUFFER) += rpmh_modem_sleepinfo.o
 obj-$(CONFIG_QTI_RPM_STATS_LOG) += rpm_stats.o
 obj-$(CONFIG_QTI_RPM_STATS_LOG) += rpmh_master_stat.o
 obj-$(CONFIG_QTI_DDR_STATS_LOG) += ddr_stats.o
+obj-$(CONFIG_QTI_H40_DDR_STATS_LOG) += ddr_stats_h40.o
 #else
 # obj-$(CONFIG_QTI_RPM_STATS_LOG) += rpm_stats.o
 # ifdef CONFIG_QTI_RPMH_API
