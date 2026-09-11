@@ -1,10 +1,10 @@
-name: Miru H.40 Wave 44.2 runtime fallback build
+name: Miru H.40 Wave 44.3 DDR correction build
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - miru-h40-wave44-2-runtime-fallback
+      - miru-h40-wave44-3-ddr-correction
     paths:
       - '.github/workflows/miru-stage9ab-task-sched-info-a14-ci.yml'
 
@@ -12,21 +12,21 @@ permissions:
   contents: read
 
 concurrency:
-  group: miru-h40-wave44-2-runtime-fallback
+  group: miru-h40-wave44-3-ddr-correction
   cancel-in-progress: true
 
 jobs:
-  build-wave44-2:
+  build-wave44-3:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      SOURCE_SHA: 36f4eb0a59cd5d34cede0455f0f84ac91e73e99e
+      SOURCE_SHA: 9df20dd3c9176e735d1ca434601e808989f8677e
       MODULES_REPAIR_SHA: 7d627f59f3ec8a975a4183674e4bb013c0809790
-      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave44-2-runtime-ci1+
-      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave44-2-runtime-ci1
+      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave44-3-ddr-ci1+
+      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave44-3-ddr-ci1
 
     steps:
-      - name: Checkout Wave 44.2 runtime fallback source
+      - name: Checkout Wave 44.3 DDR correction source
         uses: actions/checkout@v4
         with:
           ref: ${{ env.SOURCE_SHA }}
@@ -38,8 +38,8 @@ jobs:
         working-directory: source
         run: |
           set -Eeuo pipefail
-          cp h40-repro/config/GM1911_11_H.40.config "${RUNNER_TEMP}/wave44-2.config"
-          bash scripts/miru/configure_mem_stage4.sh "${RUNNER_TEMP}/wave44-2.config"
+          cp h40-repro/config/GM1911_11_H.40.config "${RUNNER_TEMP}/wave44-3.config"
+          bash scripts/miru/configure_mem_stage4.sh "${RUNNER_TEMP}/wave44-3.config"
 
       - name: Generate stable 4.14.357 build driver
         shell: bash
@@ -49,7 +49,7 @@ jobs:
           from pathlib import Path
 
           source = Path('source/scripts/miru/ci_build_4.14.190.sh')
-          target = Path('build-wave44-2-stable.sh')
+          target = Path('build-wave44-3-stable.sh')
           text = source.read_text()
 
           start = text.index('# Fetch only the distant commits required by the source-level sanity checks.')
@@ -73,23 +73,23 @@ jobs:
               'printf \'%s\\n\' "${EXPECTED_RELEASE}" > "${ARTIFACT_DIR}/KERNEL-RELEASE.txt"',
               'printf \'%s\\n\' "${SOURCE_SHA}" > "${ARTIFACT_DIR}/SOURCE-SHA.txt"',
               'printf \'%s\\n\' "${MODULES_REPAIR_SHA}" > "${ARTIFACT_DIR}/VENDOR-SHA.txt"',
-              'sha256sum "${ARTIFACT_DIR}/${EXPECTED_RELEASE}-Image.gz-dtb" > "${ARTIFACT_DIR}/WAVE44-2-RUNTIME-IMAGE-SHA256.txt"',
-              'echo "Wave 44.2 runtime fallback kernel build: PASS"',
+              'sha256sum "${ARTIFACT_DIR}/${EXPECTED_RELEASE}-Image.gz-dtb" > "${ARTIFACT_DIR}/WAVE44-3-DDR-IMAGE-SHA256.txt"',
+              'echo "Wave 44.3 DDR correction kernel build: PASS"',
           ])
 
           replacements = {
               'VENDOR_SHA=a21f9352e70a8685556582465309f8eb3fe401cb':
                   'VENDOR_SHA=7d627f59f3ec8a975a4183674e4bb013c0809790',
               '== Miru H.40 Android 4.14.190 CI build ==':
-                  '== Miru H.40 Wave 44.2 runtime fallback stable build ==',
+                  '== Miru H.40 Wave 44.3 DDR correction stable build ==',
               'KERNEL_LOCALVERSION=-miru-h40-lts190-ci1':
-                  'KERNEL_LOCALVERSION=-miru-h40-wave44-2-runtime-ci1',
+                  'KERNEL_LOCALVERSION=-miru-h40-wave44-3-ddr-ci1',
               'CONFIG_LOCALVERSION="-miru-h40-lts190-ci1"':
-                  'CONFIG_LOCALVERSION="-miru-h40-wave44-2-runtime-ci1"',
+                  'CONFIG_LOCALVERSION="-miru-h40-wave44-3-ddr-ci1"',
               'export SKIP_PRODUCTION_DTS=1':
                   'export SKIP_PRODUCTION_DTS=0',
               "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 '^Linux version 4\\.14\\.190-' || true)\"":
-                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave44-2-runtime-ci1+' || true)\"",
+                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave44-3-ddr-ci1+' || true)\"",
               'echo "Clean kernel build and output validation: PASS"': final,
           }
           for old, new in replacements.items():
@@ -100,13 +100,13 @@ jobs:
           target.write_text(text)
           target.chmod(0o755)
           PY
-          bash -n build-wave44-2-stable.sh
+          bash -n build-wave44-3-stable.sh
 
       - name: Compile kernel and reconstructed H.40 device trees
         shell: bash
         working-directory: source
         env:
-          STOCK_CONFIG: ${{ runner.temp }}/wave44-2.config
+          STOCK_CONFIG: ${{ runner.temp }}/wave44-3.config
         run: |
           set -Eeuo pipefail
           mkdir -p "${RUNNER_TEMP}/miru-dtc"
@@ -122,7 +122,7 @@ jobs:
           chmod +x "${RUNNER_TEMP}/miru-dtc/dtc"
           export LD_LIBRARY_PATH="${RUNNER_TEMP}/miru-dtc${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
           export EXTERNAL_DTC="${RUNNER_TEMP}/miru-dtc/dtc"
-          bash ../build-wave44-2-stable.sh
+          bash ../build-wave44-3-stable.sh
 
           artifact_dir="${RUNNER_TEMP}/android-root/out/h40-artifacts"
           test -s "${artifact_dir}/arch/arm64/boot/Image.gz-dtb"
@@ -171,7 +171,7 @@ jobs:
               ('4.14.190-miru-h40-lts190-ci1+', release, 1),
               ('miru-v3-modules-dropin-4.14.190', package_tag, 4),
               ('Miru 4.14.190 rebuilt external module ABI report',
-               'Miru Wave 44.2 runtime fallback external module report', 1),
+               'Miru Wave 44.3 DDR correction external module report', 1),
           )
           for old, new, expected in replacements:
               actual = text.count(old)
@@ -199,10 +199,10 @@ jobs:
              "${report_dir}/vermagic.txt" \
              "${artifact_dir}/external-modules/"
 
-      - name: Upload Wave 44.2 kernel, device trees, and modules
+      - name: Upload Wave 44.3 kernel, device trees, and modules
         uses: actions/upload-artifact@v4
         with:
-          name: miru-h40-wave44-2-runtime-fallback-kernel-and-modules
+          name: miru-h40-wave44-3-ddr-correction-kernel-and-modules
           path: ${{ runner.temp }}/android-root/out/h40-artifacts
           if-no-files-found: error
           compression-level: 0
