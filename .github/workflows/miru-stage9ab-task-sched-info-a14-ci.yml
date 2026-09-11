@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      SOURCE_SHA: 3773aebeea40d3b293f3e217657d3d2caf5a6db7
-      MODULES_REPAIR_SHA: 58a4b76687460ee45088250d826488477c428481
+      SOURCE_SHA: e6e0613c85a86a39794a604477c710b98e5bd918
+      MODULES_REPAIR_SHA: ab19b95cbb98357c75b3e7123389e8f2a26cd7e3
       EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave44-1-ddr-ci1+
       PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave44-1-ddr-ci1
 
@@ -79,7 +79,7 @@ jobs:
 
           replacements = {
               'VENDOR_SHA=a21f9352e70a8685556582465309f8eb3fe401cb':
-                  'VENDOR_SHA=58a4b76687460ee45088250d826488477c428481',
+                  'VENDOR_SHA=ab19b95cbb98357c75b3e7123389e8f2a26cd7e3',
               '== Miru H.40 Android 4.14.190 CI build ==':
                   '== Miru H.40 Wave 44.1 AOP DDR decoder stable build ==',
               'KERNEL_LOCALVERSION=-miru-h40-lts190-ci1':
