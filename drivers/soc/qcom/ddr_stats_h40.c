@@ -32,7 +32,9 @@
 #define H40_DDR_STATS_OFFSET		0x350
 #define H40_DDR_SMEM_ITEM		604
 #define H40_DDR_SMEM_MAJOR		1
-#define H40_DDR_SMEM_MINOR		0
+#define H40_DDR_SMEM_MINOR_V10		0
+#define H40_DDR_SMEM_MINOR_V11		1
+#define H40_DDR_SMEM_V11_TABLES	5
 #define H40_DDR_MAX_PLANS		16
 #define H40_AOP_TICKS_PER_MSEC		19200ULL
 #define H40_AOP_SMEM_TABLE_OFFSET	0xe0000
@@ -102,6 +104,12 @@ struct h40_ddr_smem_header {
 	__le16 major;
 	__le16 minor;
 	struct h40_ddr_smem_table table[4];
+};
+
+struct h40_ddr_smem_header_v11 {
+	__le16 major;
+	__le16 minor;
+	struct h40_ddr_smem_table table[H40_DDR_SMEM_V11_TABLES];
 };
 
 struct h40_aop_smem_addr {
@@ -445,16 +453,38 @@ static int h40_ddr_parse_version(const u8 *smem, size_t size,
 				 const char **version)
 {
 	const struct h40_ddr_smem_header *header;
+	const struct h40_ddr_smem_header_v11 *header_v11;
 	__le32 raw_version;
 	u32 packed_version;
+	size_t previous_end;
+	u16 table_offset;
+	u16 table_size;
+	int i;
 
 	if (size < sizeof(*header))
 		return -EINVAL;
 
 	header = (const void *)smem;
 	if (le16_to_cpu(header->major) == H40_DDR_SMEM_MAJOR &&
-	    le16_to_cpu(header->minor) == H40_DDR_SMEM_MINOR) {
+	    le16_to_cpu(header->minor) == H40_DDR_SMEM_MINOR_V10) {
 		*version = "split-u16-1.0";
+		return 0;
+	}
+	if (le16_to_cpu(header->major) == H40_DDR_SMEM_MAJOR &&
+	    le16_to_cpu(header->minor) == H40_DDR_SMEM_MINOR_V11) {
+		if (size < sizeof(*header_v11))
+			return -EINVAL;
+		header_v11 = (const void *)smem;
+		previous_end = sizeof(*header_v11);
+		for (i = 0; i < ARRAY_SIZE(header_v11->table); i++) {
+			table_offset = le16_to_cpu(header_v11->table[i].offset);
+			table_size = le16_to_cpu(header_v11->table[i].size);
+			if (!table_size || table_offset < previous_end ||
+			    table_offset > size || table_size > size - table_offset)
+				return -EINVAL;
+			previous_end = table_offset + table_size;
+		}
+		*version = "split-u16-1.1";
 		return 0;
 	}
 
@@ -466,7 +496,7 @@ static int h40_ddr_parse_version(const u8 *smem, size_t size,
 	memcpy(&raw_version, smem, sizeof(raw_version));
 	packed_version = le32_to_cpu(raw_version);
 	if (packed_version == (H40_DDR_SMEM_MAJOR << 16 |
-			       H40_DDR_SMEM_MINOR)) {
+			       H40_DDR_SMEM_MINOR_V10)) {
 		*version = "packed-16.16-1.0";
 		return 0;
 	}
@@ -647,6 +677,7 @@ static int h40_ddr_stats_probe(struct platform_device *pdev)
 	BUILD_BUG_ON(sizeof(struct h40_ddr_event) != 16);
 	BUILD_BUG_ON(sizeof(struct h40_ddr_aggregate) != 0xb0);
 	BUILD_BUG_ON(sizeof(struct h40_ddr_freq_state) != 0x28);
+	BUILD_BUG_ON(sizeof(struct h40_ddr_smem_header_v11) != 0x18);
 	BUILD_BUG_ON(sizeof(struct h40_aop_smem_addr) != 8);
 	BUILD_BUG_ON(sizeof(struct h40_aop_smem_table) != 88);
 

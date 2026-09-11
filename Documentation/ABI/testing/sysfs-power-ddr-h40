@@ -36,9 +36,11 @@ Date:		September 2026
 Contact:	KAI-Miru kernel maintainers
 Description:
 		The MC and SHUB clock-plan indices and frequencies decoded from the
-		version 1.0 DDR AOP parameter block in SMEM item 604. Both the split
-		u16 and Qualcomm XBL packed 16.16 representations of version 1.0 are
-		accepted; all table offsets and sizes remain strictly bounded. The
+		DDR AOP parameter block in SMEM item 604. The split-u16 version 1.0,
+		packed 16.16 version 1.0, and H.40's five-table split-u16 version 1.1
+		are accepted. Version 1.1 is accepted only when all five table spans
+		are nonempty, ordered, non-overlapping, and bounded by the item. MC and
+		SHUB table offsets and 40-byte record sizes remain strictly checked. The
 		first line reports the selected lookup source, version representation,
 		normal-QCOM and AOP-table status, item size, and item address. The next
 		two lines expose at most 32 read-only header bytes from each lookup path

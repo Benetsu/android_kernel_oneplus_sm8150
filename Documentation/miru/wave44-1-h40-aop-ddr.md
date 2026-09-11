@@ -35,12 +35,14 @@ message-RAM SMEM table at section `0xE`.  Wave 44.2 uses that authoritative
 address as a fallback when Linux's normal global-SMEM lookup cannot see the
 allocation.  The address must remain inside the device-tree reserved SMEM
 region, and the version, table offsets, sizes, and 40-byte records are still
-strictly validated.  Live Wave 44.2 rejected both views at the version check;
-that result is consistent with Qualcomm's packed `0x00010000` representation
-of version 1.0 rather than the split-u16 representation used by the AOP
-reference C structure.  Wave 44.3 accepts both encodings and exposes the raw
-header needed to confirm which one H.40 supplies; their table headers start at
-the same byte.  Invalid data never produces guessed frequencies.
+strictly validated.  Wave 44.3 exposed the live item header and established
+that H.40 supplies split-u16 version 1.1 with five table descriptors.  The item
+is 1033 bytes: its MC table is 520 bytes at offset 24 (13 records), its SHUB
+table is 320 bytes at offset 544 (8 records), and the three following tables
+end exactly at the item boundary.  Wave 44.4 accepts that backward-compatible
+layout only after validating all five ordered spans.  Version 1.0 remains
+supported for related firmware.  Invalid data never produces guessed
+frequencies.
 
 ## Exposed diagnostics
 
