@@ -100,6 +100,15 @@ if text.count(old_extend) != 1:
     raise SystemExit("OPlus audio extension make invocation missing or duplicated")
 text = text.replace(old_extend, new_extend, 1)
 
+old_sleepmon = '''make -j4 -C "${KERNEL_DIR}" O="${OUT_DIR}" M="${sleepmon_work}" \\
+  CC="${CLANG_DIR}/bin/clang" \\
+'''
+new_sleepmon = '''make -j4 -C "${KERNEL_DIR}" "${MAKE_COMMON[@]}" M="${sleepmon_work}" \\
+'''
+if text.count(old_sleepmon) != 1:
+    raise SystemExit("OPlus subsystem sleep-monitor make invocation missing or duplicated")
+text = text.replace(old_sleepmon, new_sleepmon, 1)
+
 old_wlan = '''make -j4 -C "${KERNEL_DIR}" O="${OUT_DIR}" M="${WLAN_ROOT}" \\
   WLAN_ROOT="${WLAN_ROOT}" \\
 '''
