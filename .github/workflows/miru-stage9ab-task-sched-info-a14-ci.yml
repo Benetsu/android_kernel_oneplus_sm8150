@@ -1,10 +1,10 @@
-name: Miru H.40 Wave 43 RPMh master residency build
+name: Miru H.40 Wave 44 DSP sleep visibility build
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - miru-h40-wave43-rpmh-master-residency
+      - miru-h40-wave44-adsp-sleepmon
     paths:
       - '.github/workflows/miru-stage9ab-task-sched-info-a14-ci.yml'
 
@@ -12,21 +12,21 @@ permissions:
   contents: read
 
 concurrency:
-  group: miru-h40-wave43-rpmh-master-residency
+  group: miru-h40-wave44-adsp-sleepmon
   cancel-in-progress: true
 
 jobs:
-  build-wave43:
+  build-wave44:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      SOURCE_SHA: e97a6fe0845bf65b85915dcf01fcb350db2c273c
-      MODULES_REPAIR_SHA: 1fff319cb57878a3c61ece6733d7da7b87fa9095
-      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave43-rpmh-ci1+
-      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave43-rpmh-ci1
+      SOURCE_SHA: c469f64df8f155e19f1e50e3539cbf12deca29fc
+      MODULES_REPAIR_SHA: 58a4b76687460ee45088250d826488477c428481
+      EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave44-sleepmon-ci1+
+      PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave44-sleepmon-ci1
 
     steps:
-      - name: Checkout Wave 43 RPMh master residency source
+      - name: Checkout Wave 44 DSP sleep visibility source
         uses: actions/checkout@v4
         with:
           ref: ${{ env.SOURCE_SHA }}
@@ -38,8 +38,8 @@ jobs:
         working-directory: source
         run: |
           set -Eeuo pipefail
-          cp h40-repro/config/GM1911_11_H.40.config "${RUNNER_TEMP}/wave43.config"
-          bash scripts/miru/configure_mem_stage4.sh "${RUNNER_TEMP}/wave43.config"
+          cp h40-repro/config/GM1911_11_H.40.config "${RUNNER_TEMP}/wave44.config"
+          bash scripts/miru/configure_mem_stage4.sh "${RUNNER_TEMP}/wave44.config"
 
       - name: Generate stable 4.14.357 build driver
         shell: bash
@@ -49,7 +49,7 @@ jobs:
           from pathlib import Path
 
           source = Path('source/scripts/miru/ci_build_4.14.190.sh')
-          target = Path('build-wave43-stable.sh')
+          target = Path('build-wave44-stable.sh')
           text = source.read_text()
 
           start = text.index('# Fetch only the distant commits required by the source-level sanity checks.')
@@ -73,23 +73,23 @@ jobs:
               'printf \'%s\\n\' "${EXPECTED_RELEASE}" > "${ARTIFACT_DIR}/KERNEL-RELEASE.txt"',
               'printf \'%s\\n\' "${SOURCE_SHA}" > "${ARTIFACT_DIR}/SOURCE-SHA.txt"',
               'printf \'%s\\n\' "${MODULES_REPAIR_SHA}" > "${ARTIFACT_DIR}/VENDOR-SHA.txt"',
-              'sha256sum "${ARTIFACT_DIR}/${EXPECTED_RELEASE}-Image.gz-dtb" > "${ARTIFACT_DIR}/WAVE43-RPMH-MASTER-RESIDENCY-IMAGE-SHA256.txt"',
-              'echo "Wave 43 RPMh master residency kernel build: PASS"',
+              'sha256sum "${ARTIFACT_DIR}/${EXPECTED_RELEASE}-Image.gz-dtb" > "${ARTIFACT_DIR}/WAVE44-DSP-SLEEP-VISIBILITY-IMAGE-SHA256.txt"',
+              'echo "Wave 44 DSP sleep visibility kernel build: PASS"',
           ])
 
           replacements = {
               'VENDOR_SHA=a21f9352e70a8685556582465309f8eb3fe401cb':
-                  'VENDOR_SHA=1fff319cb57878a3c61ece6733d7da7b87fa9095',
+                  'VENDOR_SHA=58a4b76687460ee45088250d826488477c428481',
               '== Miru H.40 Android 4.14.190 CI build ==':
-                  '== Miru H.40 Wave 43 RPMh master residency stable build ==',
+                  '== Miru H.40 Wave 44 DSP sleep visibility stable build ==',
               'KERNEL_LOCALVERSION=-miru-h40-lts190-ci1':
-                  'KERNEL_LOCALVERSION=-miru-h40-wave43-rpmh-ci1',
+                  'KERNEL_LOCALVERSION=-miru-h40-wave44-sleepmon-ci1',
               'CONFIG_LOCALVERSION="-miru-h40-lts190-ci1"':
-                  'CONFIG_LOCALVERSION="-miru-h40-wave43-rpmh-ci1"',
+                  'CONFIG_LOCALVERSION="-miru-h40-wave44-sleepmon-ci1"',
               'export SKIP_PRODUCTION_DTS=1':
                   'export SKIP_PRODUCTION_DTS=0',
               "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 '^Linux version 4\\.14\\.190-' || true)\"":
-                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave43-rpmh-ci1+' || true)\"",
+                  "banner=\"$(strings \"${OUT_DIR}/arch/arm64/boot/Image\" | grep -m1 -F 'Linux version 4.14.357-openela-miru-h40-wave44-sleepmon-ci1+' || true)\"",
               'echo "Clean kernel build and output validation: PASS"': final,
           }
           for old, new in replacements.items():
@@ -100,13 +100,13 @@ jobs:
           target.write_text(text)
           target.chmod(0o755)
           PY
-          bash -n build-wave43-stable.sh
+          bash -n build-wave44-stable.sh
 
       - name: Compile kernel and reconstructed H.40 device trees
         shell: bash
         working-directory: source
         env:
-          STOCK_CONFIG: ${{ runner.temp }}/wave43.config
+          STOCK_CONFIG: ${{ runner.temp }}/wave44.config
         run: |
           set -Eeuo pipefail
           mkdir -p "${RUNNER_TEMP}/miru-dtc"
@@ -122,7 +122,7 @@ jobs:
           chmod +x "${RUNNER_TEMP}/miru-dtc/dtc"
           export LD_LIBRARY_PATH="${RUNNER_TEMP}/miru-dtc${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
           export EXTERNAL_DTC="${RUNNER_TEMP}/miru-dtc/dtc"
-          bash ../build-wave43-stable.sh
+          bash ../build-wave44-stable.sh
 
           artifact_dir="${RUNNER_TEMP}/android-root/out/h40-artifacts"
           test -s "${artifact_dir}/arch/arm64/boot/Image.gz-dtb"
@@ -171,7 +171,7 @@ jobs:
               ('4.14.190-miru-h40-lts190-ci1+', release, 1),
               ('miru-v3-modules-dropin-4.14.190', package_tag, 4),
               ('Miru 4.14.190 rebuilt external module ABI report',
-               'Miru Wave 43 RPMh master residency external module report', 1),
+               'Miru Wave 44 DSP sleep visibility external module report', 1),
           )
           for old, new, expected in replacements:
               actual = text.count(old)
@@ -188,7 +188,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends p7zip-full
           bash scripts/miru/build_external_modules_4.14.190.sh
 
-          test "$(find "${module_dir}" -maxdepth 1 -type f -name '*.ko' | wc -l)" = 32
+          test "$(find "${module_dir}" -maxdepth 1 -type f -name '*.ko' | wc -l)" = 33
           test -s "${runtime_archive}"
           test -s "${audit_archive}"
 
@@ -199,10 +199,10 @@ jobs:
              "${report_dir}/vermagic.txt" \
              "${artifact_dir}/external-modules/"
 
-      - name: Upload Wave 43 kernel, device trees, and modules
+      - name: Upload Wave 44 kernel, device trees, and modules
         uses: actions/upload-artifact@v4
         with:
-          name: miru-h40-wave43-rpmh-master-residency-kernel-and-modules
+          name: miru-h40-wave44-dsp-sleep-visibility-kernel-and-modules
           path: ${{ runner.temp }}/android-root/out/h40-artifacts
           if-no-files-found: error
           compression-level: 0
