@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      SOURCE_SHA: ecfa11c55fd5095eb33813716be483e6fb5381f6
+      SOURCE_SHA: 3773aebeea40d3b293f3e217657d3d2caf5a6db7
       MODULES_REPAIR_SHA: 58a4b76687460ee45088250d826488477c428481
       EXPECTED_RELEASE: 4.14.357-openela-miru-h40-wave44-1-ddr-ci1+
       PACKAGE_TAG: miru-v3-modules-dropin-4.14.357-openela-miru-h40-wave44-1-ddr-ci1
