@@ -118,9 +118,9 @@ def pack_dtbo(entries):
 def require_wave16_sources(source_root, rows):
     required = (
         'qcom,ddr-stats@c3f0000 {',
-        'compatible = "qcom,ddr-stats";',
-        'reg = <0x00 0xc300000 0x00 0x1000',
-        '0x00 0xc3f001c 0x00 0x04>;',
+        'compatible = "qcom,h40-ddr-stats";',
+        'reg = <0x00 0xc300000 0x00 0x100000',
+        '0x00 0xc3f0014 0x00 0x04>;',
         'reg-names = "phys_addr_base", "offset_addr";',
     )
     for row in rows:
@@ -131,7 +131,7 @@ def require_wave16_sources(source_root, rows):
         expected = 0 if is_rtic else 1
         if counts != [expected] * len(required):
             raise SystemExit(
-                "Wave 16 DDR-stats invariant failed for {}: {}".format(
+                "H.40 AOP DDR-stats invariant failed for {}: {}".format(
                     row["source"], counts
                 )
             )
