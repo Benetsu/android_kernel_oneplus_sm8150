@@ -35,7 +35,12 @@ message-RAM SMEM table at section `0xE`.  Wave 44.2 uses that authoritative
 address as a fallback when Linux's normal global-SMEM lookup cannot see the
 allocation.  The address must remain inside the device-tree reserved SMEM
 region, and the version, table offsets, sizes, and 40-byte records are still
-strictly validated.  Invalid data never produces guessed frequencies.
+strictly validated.  Live Wave 44.2 rejected both views at the version check;
+that result is consistent with Qualcomm's packed `0x00010000` representation
+of version 1.0 rather than the split-u16 representation used by the AOP
+reference C structure.  Wave 44.3 accepts both encodings and exposes the raw
+header needed to confirm which one H.40 supplies; their table headers start at
+the same byte.  Invalid data never produces guessed frequencies.
 
 ## Exposed diagnostics
 
@@ -63,7 +68,9 @@ cat /sys/power/ddr/recent_residency
 ```
 
 `clock_plans` also reports whether the normal SMEM API or the AOP/XBL address
-table supplied the mapping and preserves both lookup status codes.
+table supplied the mapping, preserves both lookup status codes, and includes
+the bounded raw header bytes needed to diagnose another firmware revision
+without enabling `/dev/mem`.
 
 Success requires the ABI marker, nonzero MC and SHUB frequency plans, monotonic
 transition timestamps, `FREQ_DONE` records after memory-load changes, and

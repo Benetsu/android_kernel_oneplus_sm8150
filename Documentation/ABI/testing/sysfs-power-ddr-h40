@@ -36,7 +36,11 @@ Date:		September 2026
 Contact:	KAI-Miru kernel maintainers
 Description:
 		The MC and SHUB clock-plan indices and frequencies decoded from the
-		version 1.0 DDR AOP parameter block in SMEM item 604. The first line
-		reports the selected lookup source, normal-QCOM and AOP-table status,
-		and validated item address. H.40 can use XBL's bounded address table
+		version 1.0 DDR AOP parameter block in SMEM item 604. Both the split
+		u16 and Qualcomm XBL packed 16.16 representations of version 1.0 are
+		accepted; all table offsets and sizes remain strictly bounded. The
+		first line reports the selected lookup source, version representation,
+		normal-QCOM and AOP-table status, item size, and item address. The next
+		two lines expose at most 32 read-only header bytes from each lookup path
+		for firmware ABI diagnosis. H.40 can use XBL's bounded address table
 		in AOP message-RAM section 0xE when the normal SMEM API cannot see it.

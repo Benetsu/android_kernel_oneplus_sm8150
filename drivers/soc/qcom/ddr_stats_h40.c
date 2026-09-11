@@ -38,6 +38,7 @@
 #define H40_AOP_SMEM_TABLE_OFFSET	0xe0000
 #define H40_AOP_SMEM_TABLE_ENTRIES	10
 #define H40_DDR_SMEM_WINDOW		SZ_4K
+#define H40_DDR_HEADER_DUMP_SIZE	32
 
 enum h40_ddr_event_type {
 	H40_DDR_FREQ_CHANGE,
@@ -146,9 +147,15 @@ struct h40_ddr_data {
 	u8 mc_count;
 	u8 shub_count;
 	const char *clock_plan_source;
+	const char *clock_plan_version;
 	int qcom_smem_status;
 	int aop_smem_status;
 	phys_addr_t clock_plan_phys;
+	size_t qcom_smem_size;
+	u8 qcom_header[H40_DDR_HEADER_DUMP_SIZE];
+	u8 qcom_header_size;
+	u8 aop_header[H40_DDR_HEADER_DUMP_SIZE];
+	u8 aop_header_size;
 };
 
 static int h40_ddr_validate_page(const u8 *page)
@@ -402,9 +409,20 @@ static ssize_t h40_ddr_clock_plans_show(struct kobject *kobj,
 	int i;
 
 	length += scnprintf(buf + length, PAGE_SIZE - length,
-		"source=%s qcom_status=%d aop_table_status=%d item_phys=%pa\n",
-		data->clock_plan_source, data->qcom_smem_status,
+		"source=%s version=%s qcom_status=%d qcom_size=%zu "
+		"aop_table_status=%d item_phys=%pa\n",
+		data->clock_plan_source, data->clock_plan_version,
+		data->qcom_smem_status, data->qcom_smem_size,
 		data->aop_smem_status, &data->clock_plan_phys);
+	length += scnprintf(buf + length, PAGE_SIZE - length, "qcom_header=");
+	for (i = 0; i < data->qcom_header_size; i++)
+		length += scnprintf(buf + length, PAGE_SIZE - length, "%02x",
+					data->qcom_header[i]);
+	length += scnprintf(buf + length, PAGE_SIZE - length, "\naop_header=");
+	for (i = 0; i < data->aop_header_size; i++)
+		length += scnprintf(buf + length, PAGE_SIZE - length, "%02x",
+					data->aop_header[i]);
+	length += scnprintf(buf + length, PAGE_SIZE - length, "\n");
 	for (i = 0; i < data->mc_count; i++)
 		length += scnprintf(buf + length, PAGE_SIZE - length,
 			"MC CP:%d Freq:%uKHz\n", i, data->mc_freq_khz[i]);
@@ -412,6 +430,48 @@ static ssize_t h40_ddr_clock_plans_show(struct kobject *kobj,
 		length += scnprintf(buf + length, PAGE_SIZE - length,
 			"SHUB CP:%d Freq:%uKHz\n", i, data->shub_freq_khz[i]);
 	return length;
+}
+
+static void h40_ddr_capture_header(u8 *destination, u8 *destination_size,
+				    const u8 *smem, size_t size)
+{
+	size_t length = min_t(size_t, size, H40_DDR_HEADER_DUMP_SIZE);
+
+	memcpy(destination, smem, length);
+	*destination_size = length;
+}
+
+static int h40_ddr_parse_version(const u8 *smem, size_t size,
+				 const char **version)
+{
+	const struct h40_ddr_smem_header *header;
+	__le32 raw_version;
+	u32 packed_version;
+
+	if (size < sizeof(*header))
+		return -EINVAL;
+
+	header = (const void *)smem;
+	if (le16_to_cpu(header->major) == H40_DDR_SMEM_MAJOR &&
+	    le16_to_cpu(header->minor) == H40_DDR_SMEM_MINOR) {
+		*version = "split-u16-1.0";
+		return 0;
+	}
+
+	/*
+	 * Some Qualcomm XBL/DDRSS producers encode the same 1.0 version as
+	 * one 16.16 word.  The table headers still begin at byte four, so only
+	 * the version interpretation differs from ddr_smem_info.
+	 */
+	memcpy(&raw_version, smem, sizeof(raw_version));
+	packed_version = le32_to_cpu(raw_version);
+	if (packed_version == (H40_DDR_SMEM_MAJOR << 16 |
+			       H40_DDR_SMEM_MINOR)) {
+		*version = "packed-16.16-1.0";
+		return 0;
+	}
+
+	return -EPROTONOSUPPORT;
 }
 
 static int h40_ddr_load_one_plan(const u8 *smem, size_t smem_size,
@@ -443,12 +503,10 @@ static int h40_ddr_parse_clock_plans(struct h40_ddr_data *data,
 
 	data->mc_count = 0;
 	data->shub_count = 0;
-	if (size < sizeof(*header))
-		return -EINVAL;
+	ret = h40_ddr_parse_version(smem, size, &data->clock_plan_version);
+	if (ret)
+		return ret;
 	header = (const void *)smem;
-	if (le16_to_cpu(header->major) != H40_DDR_SMEM_MAJOR ||
-	    le16_to_cpu(header->minor) != H40_DDR_SMEM_MINOR)
-		return -EPROTONOSUPPORT;
 
 	ret = h40_ddr_load_one_plan(smem, size, &header->table[0],
 				     data->mc_freq_khz, &data->mc_count);
@@ -489,6 +547,7 @@ static int h40_ddr_load_clock_plans_from_aop(struct h40_ddr_data *data,
 	for (i = 0; i < count; i++) {
 		if (le32_to_cpu(table.entry[i].item) == H40_DDR_SMEM_ITEM) {
 			item_phys = le32_to_cpu(table.entry[i].phys_addr);
+			data->clock_plan_phys = item_phys;
 			break;
 		}
 	}
@@ -520,12 +579,12 @@ static int h40_ddr_load_clock_plans_from_aop(struct h40_ddr_data *data,
 	}
 	memcpy_fromio(snapshot, item_io, H40_DDR_SMEM_WINDOW);
 	iounmap(item_io);
+	h40_ddr_capture_header(data->aop_header, &data->aop_header_size,
+			       snapshot, H40_DDR_SMEM_WINDOW);
 
 	ret = h40_ddr_parse_clock_plans(data, snapshot,
 					 H40_DDR_SMEM_WINDOW);
 	kfree(snapshot);
-	if (!ret)
-		data->clock_plan_phys = item_phys;
 	return ret;
 }
 
@@ -537,11 +596,16 @@ static int h40_ddr_load_clock_plans(struct h40_ddr_data *data,
 	int ret;
 
 	data->clock_plan_source = "unavailable";
+	data->clock_plan_version = "unrecognized";
 	smem = qcom_smem_get(QCOM_SMEM_HOST_ANY, H40_DDR_SMEM_ITEM, &size);
 	if (IS_ERR(smem))
 		ret = PTR_ERR(smem);
-	else
+	else {
+		data->qcom_smem_size = size;
+		h40_ddr_capture_header(data->qcom_header,
+				       &data->qcom_header_size, smem, size);
 		ret = h40_ddr_parse_clock_plans(data, smem, size);
+	}
 	data->qcom_smem_status = ret;
 	if (!ret) {
 		data->clock_plan_source = "qcom_smem";
