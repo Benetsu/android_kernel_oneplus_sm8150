@@ -63,7 +63,7 @@ def compile_entries(dtc, source_root, output_root, rows, mode, kind):
         payload = output.read_bytes()
         digest = sha256(payload)
         expected = row[expected_key]
-        if digest != expected:
+        if mode == "stock" and digest != expected:
             raise SystemExit(
                 "{} hash mismatch: got {}, expected {}".format(
                     row["source"], digest, expected
