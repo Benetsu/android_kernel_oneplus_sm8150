@@ -1,0 +1,20 @@
+What:		/proc/subsys_sleepmon/adsp
+What:		/proc/subsys_sleepmon/adsp_compact
+What:		/proc/subsys_sleepmon/cdsp
+What:		/proc/subsys_sleepmon/cdsp_compact
+What:		/proc/subsys_sleepmon/slpi
+What:		/proc/subsys_sleepmon/slpi_compact
+Date:		January 2024
+Contact:	OPLUS power-management maintainers
+Description:
+		Read-only snapshots of Qualcomm subsystem low-power votes. The
+		unqualified files provide a human-readable report. The `_compact`
+		files provide the key/value form consumed by ColorOS power
+		diagnostics, including the selected sleep mode, rejection reasons,
+		XO voters, active DSP thread, latency and duration voters, and
+		disabled LPRM resources.
+
+		ADSP uses Qualcomm SMEM host 2, SLPI/SSC host 3, and CDSP host 5.
+		The firmware-owned tables are SMEM items 590 and 591. Reads fail
+		cleanly when either table is absent, too small, or reports counts
+		outside the 9R layout; the kernel never modifies those tables.

@@ -204,6 +204,25 @@ PY
   fi
 fi
 
+# ColorOS reads the OnePlus 9R subsystem sleep-voter ABI through procfs.  Build
+# the hardened OPlus module against the matching kernel and include it in the
+# normal DLKM load set.
+SLEEPMON_ROOT="${VENDOR_ROOT}/oplus/kernel/power/subsys_sleep_monitor"
+sleepmon_work="${MODULE_WORK}/oplus/subsys_sleep_monitor"
+test -f "${SLEEPMON_ROOT}/oplus_subsys_sleep_monitor.c"
+rm -rf "${sleepmon_work}"
+mkdir -p "${sleepmon_work}"
+rsync -a --exclude='*.o' --exclude='*.ko' --exclude='*.cmd' \
+  --exclude='Module.symvers' --exclude='modules.order' \
+  "${SLEEPMON_ROOT}/" "${sleepmon_work}/"
+make -j4 -C "${KERNEL_DIR}" O="${OUT_DIR}" M="${sleepmon_work}" \
+  CONFIG_OPLUS_SUBSYS_SLEEP_MONITOR=m \
+  KBUILD_EXTRA_SYMBOLS="${CUMULATIVE_SYMVERS}" modules \
+  2>&1 | tee "${REPORT_DIR}/oplus_subsys_sleep_monitor.log"
+test -s "${sleepmon_work}/oplus_subsys_sleep_monitor.ko"
+cp -f "${sleepmon_work}/oplus_subsys_sleep_monitor.ko" \
+  "${PACKAGE_DIR}/oplus_subsys_sleep_monitor.ko"
+
 # Qualcomm qcacld WLAN was already proven buildable directly with Kbuild in the
 # source-completeness audit.  Rebuild it against the 4.14.190 output.
 WLAN_ROOT="${WLAN_PARENT}/qcacld-3.0"
@@ -221,8 +240,8 @@ make -j4 -C "${KERNEL_DIR}" O="${OUT_DIR}" M="${WLAN_ROOT}" \
 test -s "${WLAN_ROOT}/wlan.ko"
 cp -f "${WLAN_ROOT}/wlan.ko" "${PACKAGE_DIR}/qca_cld3_wlan.ko"
 
-# Runtime manifest: BinderStats now lives in vmlinux, leaving the existing
-# 32-module runtime set in the DLKM payload.
+# Runtime manifest: BinderStats lives in vmlinux; Wave 44 adds the subsystem
+# sleep monitor to the existing 32-module DLKM set.
 cat > "${MODULE_WORK}/expected-modules.txt" <<'EOF'
 audio_adsp_loader.ko
 audio_apr.ko
@@ -252,6 +271,7 @@ audio_wsa881x.ko
 mpq-adapter.ko
 mpq-dmx-hw-plugin.ko
 msm_11ad_proxy.ko
+oplus_subsys_sleep_monitor.ko
 qca_cld3_wlan.ko
 rdbg.ko
 tspp.ko
@@ -260,7 +280,7 @@ EOF
 find "${PACKAGE_DIR}" -maxdepth 1 -type f -name '*.ko' -printf '%f\n' | sort > "${MODULE_WORK}/actual-modules.txt"
 sort "${MODULE_WORK}/expected-modules.txt" -o "${MODULE_WORK}/expected-modules.txt"
 diff -u "${MODULE_WORK}/expected-modules.txt" "${MODULE_WORK}/actual-modules.txt"
-test "$(wc -l < "${MODULE_WORK}/actual-modules.txt")" = 32
+test "$(wc -l < "${MODULE_WORK}/actual-modules.txt")" = 33
 
 # Keep modules uncompressed and strip only non-runtime debug information.
 for module in "${PACKAGE_DIR}"/*.ko; do
@@ -318,6 +338,7 @@ tspp.ko
 audio_max98937.ko
 audio_tfa9894.ko
 audio_extend.ko
+oplus_subsys_sleep_monitor.ko
 qca_cld3_wlan.ko
 rdbg.ko
 EOF
@@ -512,7 +533,7 @@ cp "${AUDIT_ARCHIVE}" "${PACKAGE_DIR}/../miru-v3-modules-dropin-4.14.190-audit.z
 {
   echo "result=SUCCESS"
   echo "kernel_release=${KERNEL_RELEASE}"
-  echo "module_count=32"
+  echo "module_count=33"
   echo "metadata_count=4"
   echo "runtime_archive_sha256=$(sha256sum "${RUNTIME_ARCHIVE}" | awk '{print $1}')"
   echo "audit_archive_sha256=$(sha256sum "${AUDIT_ARCHIVE}" | awk '{print $1}')"
@@ -520,4 +541,4 @@ cp "${AUDIT_ARCHIVE}" "${PACKAGE_DIR}/../miru-v3-modules-dropin-4.14.190-audit.z
   echo "audit_archive_size=$(stat -c %s "${AUDIT_ARCHIVE}")"
 } | tee "${REPORT_DIR}/PACKAGE-SUMMARY.txt"
 
-echo "All 32 external modules rebuilt and packaged successfully."
+echo "All 33 external modules rebuilt and packaged successfully."

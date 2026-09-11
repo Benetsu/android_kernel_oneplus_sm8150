@@ -103,6 +103,7 @@
 #define FASTRPC_STATIC_HANDLE_LISTENER (3)
 #define FASTRPC_STATIC_HANDLE_MAX (20)
 #define FASTRPC_LATENCY_CTRL_ENB  (1)
+#define MAX_PM_TIMEOUT_MS (50)
 
 #define MAX_SIZE_LIMIT (0x78000000)
 #define INIT_FILELEN_MAX (2*1024*1024)
@@ -399,6 +400,7 @@ struct fastrpc_file {
 	char *debug_buf;
 	/* Flag to enable PM wake/relax voting for every remote invoke */
 	int wake_enable;
+	uint32_t ws_timeout;
 };
 
 static struct fastrpc_apps gfa;
@@ -1949,6 +1951,21 @@ static inline void fastrpc_pm_relax(bool *pm_awake_voted, int channel_type)
 	else if (channel_type == NON_SECURE_CHANNEL)
 		__pm_relax(me->wake_source);
 	*pm_awake_voted = false;
+}
+
+static inline void fastrpc_pm_wakeup_timeout(struct fastrpc_file *fl,
+					     int channel_type)
+{
+	struct wakeup_source *wake_source = NULL;
+	struct fastrpc_apps *me = &gfa;
+
+	if (channel_type == SECURE_CHANNEL)
+		wake_source = me->wake_source_secure;
+	else if (channel_type == NON_SECURE_CHANNEL)
+		wake_source = me->wake_source;
+
+	if (wake_source)
+		pm_wakeup_ws_event(wake_source, fl->ws_timeout, true);
 }
 
 static int fastrpc_internal_invoke(struct fastrpc_file *fl, uint32_t mode,
@@ -3526,6 +3543,20 @@ static int fastrpc_internal_control(struct fastrpc_file *fl,
 		break;
 	case FASTRPC_CONTROL_WAKELOCK:
 		fl->wake_enable = cp->wp.enable;
+		break;
+	case FASTRPC_CONTROL_PM:
+		if (!fl->wake_enable) {
+			err = -EACCES;
+			goto bail;
+		}
+		fl->ws_timeout = min(cp->pm.timeout,
+				     (uint32_t)MAX_PM_TIMEOUT_MS);
+		VERIFY(err, fl->cid >= 0 && fl->cid < NUM_CHANNELS);
+		if (err) {
+			err = -ECHRNG;
+			goto bail;
+		}
+		fastrpc_pm_wakeup_timeout(fl, gcinfo[fl->cid].secure);
 		break;
 	default:
 		err = -EBADRQC;
