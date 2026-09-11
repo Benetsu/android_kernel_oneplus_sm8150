@@ -15,6 +15,9 @@ Description:
 		disabled LPRM resources.
 
 		ADSP uses Qualcomm SMEM host 2, SLPI/SSC host 3, and CDSP host 5.
-		The firmware-owned tables are SMEM items 590 and 591. Reads fail
-		cleanly when either table is absent, too small, or reports counts
-		outside the 9R layout; the kernel never modifies those tables.
+		The 9R firmware-owned tables are SMEM items 590 and 591. When those
+		tables are absent on H.40, reads fall back to the matching RPMh master
+		accumulated-sleep counter. Recognised ColorOS voter fields remain empty
+		so unavailable per-client blockers are never fabricated; additional
+		`source`, `master`, `sleep_time_ms`, and `voter_smem_error` fields are
+		provided for diagnostics. The kernel never modifies firmware tables.

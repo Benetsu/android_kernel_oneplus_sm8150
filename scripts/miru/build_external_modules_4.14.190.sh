@@ -309,6 +309,7 @@ done
 
 # Preserve the known-good load order while pointing at the newly rebuilt files.
 cat > "${PACKAGE_DIR}/modules.load" <<'EOF'
+oplus_subsys_sleep_monitor.ko
 audio_apr.ko
 audio_wglink.ko
 audio_q6_pdr.ko
@@ -339,7 +340,6 @@ tspp.ko
 audio_max98937.ko
 audio_tfa9894.ko
 audio_extend.ko
-oplus_subsys_sleep_monitor.ko
 qca_cld3_wlan.ko
 rdbg.ko
 EOF

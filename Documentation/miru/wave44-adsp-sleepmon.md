@@ -32,6 +32,21 @@ stack demonstrably requests on Miru H.40.
   applies a timed wakeup event to the existing secure/non-secure wake source.
 - Retain the proven SM8150 per-invocation stay-awake/relax path unchanged.
 
+## H.40 firmware fallback
+
+Live Wave 44.1 testing confirmed that H.40 does not allocate the newer 9R
+SMEM voter records 590 and 591.  Wave 44.2 therefore keeps all recognised
+ColorOS compact-parser fields empty rather than inventing blocker names, and
+adds truthful, parser-ignored diagnostics sourced from the existing SM8150
+RPMh master statistics: `source`, `master`, `sleep_time_ms`, and the original
+voter-SMEM error.  The full node states explicitly that per-client voter data
+is unavailable on this firmware.
+
+The module is kept external like the 9R donor.  It is placed first in the
+generated `modules.load` list because the H.40 loader did not reach it after
+optional hardware modules; a manual load proved its vermagic and initializer
+were correct.
+
 The newer Qualcomm RPMSG sleep-monitor driver is intentionally not included:
 the pristine H.40 firmware does not expose its `sleepmonglink-apps-adsp`
 service. This wave adds no DTB/DTBO change, polling loop, panic/SSR control,
@@ -49,7 +64,6 @@ logcat -b all -d | grep -F "kernel does not support PM management"
 ```
 
 Success means the six proc files exist, available firmware tables produce
-bounded key/value reports, repeated reads do not change firmware fields, and
-new `sscrpcd` request-5 calls no longer return `Invalid request code`. A clean
-`ENODATA`/firmware error from one subsystem is a firmware visibility result,
-not permission to invent a table.
+bounded key/value reports, H.40 fallback reads produce increasing RPMh sleep
+totals without fabricated blocker values, and new `sscrpcd` request-5 calls no
+longer return `Invalid request code`.

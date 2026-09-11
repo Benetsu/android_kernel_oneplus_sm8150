@@ -36,4 +36,7 @@ Date:		September 2026
 Contact:	KAI-Miru kernel maintainers
 Description:
 		The MC and SHUB clock-plan indices and frequencies decoded from the
-		version 1.0 DDR AOP parameter block in SMEM item 604.
+		version 1.0 DDR AOP parameter block in SMEM item 604. The first line
+		reports the selected lookup source, normal-QCOM and AOP-table status,
+		and validated item address. H.40 can use XBL's bounded address table
+		in AOP message-RAM section 0xE when the normal SMEM API cannot see it.

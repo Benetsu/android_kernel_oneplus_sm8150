@@ -29,9 +29,13 @@ config offset = 0x330
 The records are copied twice and accepted only when both snapshots match.
 This prevents a partially updated AOP record from being decoded.
 
-Clock-plan indices are resolved from version 1.0 DDR AOP SMEM item 604. An
-invalid SMEM table never produces guessed frequencies; the driver continues
-to expose raw indices and reports zero for unavailable mappings.
+Clock-plan indices are resolved from version 1.0 DDR AOP SMEM item 604.  H.40
+XBL also publishes the item's physical address in the bounded ten-entry AOP
+message-RAM SMEM table at section `0xE`.  Wave 44.2 uses that authoritative
+address as a fallback when Linux's normal global-SMEM lookup cannot see the
+allocation.  The address must remain inside the device-tree reserved SMEM
+region, and the version, table offsets, sizes, and 40-byte records are still
+strictly validated.  Invalid data never produces guessed frequencies.
 
 ## Exposed diagnostics
 
@@ -57,6 +61,9 @@ cat /sys/power/ddr/manager_stats
 cat /sys/power/ddr/transitions
 cat /sys/power/ddr/recent_residency
 ```
+
+`clock_plans` also reports whether the normal SMEM API or the AOP/XBL address
+table supplied the mapping and preserves both lookup status codes.
 
 Success requires the ABI marker, nonzero MC and SHUB frequency plans, monotonic
 transition timestamps, `FREQ_DONE` records after memory-load changes, and

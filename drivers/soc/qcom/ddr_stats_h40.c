@@ -17,7 +17,9 @@
 #include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/of_address.h>
 #include <linux/platform_device.h>
+#include <linux/sizes.h>
 #include <linux/slab.h>
 #include <linux/sort.h>
 #include <linux/soc/qcom/smem.h>
@@ -33,6 +35,9 @@
 #define H40_DDR_SMEM_MINOR		0
 #define H40_DDR_MAX_PLANS		16
 #define H40_AOP_TICKS_PER_MSEC		19200ULL
+#define H40_AOP_SMEM_TABLE_OFFSET	0xe0000
+#define H40_AOP_SMEM_TABLE_ENTRIES	10
+#define H40_DDR_SMEM_WINDOW		SZ_4K
 
 enum h40_ddr_event_type {
 	H40_DDR_FREQ_CHANGE,
@@ -98,6 +103,17 @@ struct h40_ddr_smem_header {
 	struct h40_ddr_smem_table table[4];
 };
 
+struct h40_aop_smem_addr {
+	__le32 item;
+	__le32 phys_addr;
+};
+
+struct h40_aop_smem_table {
+	__le32 initialized;
+	__le32 count;
+	struct h40_aop_smem_addr entry[H40_AOP_SMEM_TABLE_ENTRIES];
+};
+
 /* Explicit padding preserves the 40-byte H.O.1.1 FREQ_STATE ABI. */
 struct h40_ddr_freq_state {
 	u8 clk_idx;
@@ -129,6 +145,10 @@ struct h40_ddr_data {
 	u32 shub_freq_khz[H40_DDR_MAX_PLANS];
 	u8 mc_count;
 	u8 shub_count;
+	const char *clock_plan_source;
+	int qcom_smem_status;
+	int aop_smem_status;
+	phys_addr_t clock_plan_phys;
 };
 
 static int h40_ddr_validate_page(const u8 *page)
@@ -381,6 +401,10 @@ static ssize_t h40_ddr_clock_plans_show(struct kobject *kobj,
 	ssize_t length = 0;
 	int i;
 
+	length += scnprintf(buf + length, PAGE_SIZE - length,
+		"source=%s qcom_status=%d aop_table_status=%d item_phys=%pa\n",
+		data->clock_plan_source, data->qcom_smem_status,
+		data->aop_smem_status, &data->clock_plan_phys);
 	for (i = 0; i < data->mc_count; i++)
 		length += scnprintf(buf + length, PAGE_SIZE - length,
 			"MC CP:%d Freq:%uKHz\n", i, data->mc_freq_khz[i]);
@@ -411,16 +435,14 @@ static int h40_ddr_load_one_plan(const u8 *smem, size_t smem_size,
 	return 0;
 }
 
-static int h40_ddr_load_clock_plans(struct h40_ddr_data *data)
+static int h40_ddr_parse_clock_plans(struct h40_ddr_data *data,
+				      const u8 *smem, size_t size)
 {
 	const struct h40_ddr_smem_header *header;
-	const u8 *smem;
-	size_t size;
 	int ret;
 
-	smem = qcom_smem_get(QCOM_SMEM_HOST_ANY, H40_DDR_SMEM_ITEM, &size);
-	if (IS_ERR(smem))
-		return PTR_ERR(smem);
+	data->mc_count = 0;
+	data->shub_count = 0;
 	if (size < sizeof(*header))
 		return -EINVAL;
 	header = (const void *)smem;
@@ -434,6 +456,105 @@ static int h40_ddr_load_clock_plans(struct h40_ddr_data *data)
 		return ret;
 	return h40_ddr_load_one_plan(smem, size, &header->table[1],
 				      data->shub_freq_khz, &data->shub_count);
+}
+
+static int h40_ddr_load_clock_plans_from_aop(struct h40_ddr_data *data,
+					     const struct resource *base)
+{
+	struct h40_aop_smem_table table;
+	struct device_node *smem_np, *region_np;
+	struct resource smem_region;
+	void __iomem *table_io, *item_io;
+	resource_size_t item_phys = 0;
+	u8 *snapshot;
+	u32 count;
+	int i, ret;
+
+	if (H40_AOP_SMEM_TABLE_OFFSET > resource_size(base) ||
+	    sizeof(table) > resource_size(base) - H40_AOP_SMEM_TABLE_OFFSET)
+		return -ERANGE;
+
+	table_io = ioremap_nocache(base->start + H40_AOP_SMEM_TABLE_OFFSET,
+				    sizeof(table));
+	if (!table_io)
+		return -ENOMEM;
+	memcpy_fromio(&table, table_io, sizeof(table));
+	iounmap(table_io);
+
+	if (le32_to_cpu(table.initialized) != 1)
+		return -ENODATA;
+	count = le32_to_cpu(table.count);
+	if (!count || count > ARRAY_SIZE(table.entry))
+		return -EPROTO;
+	for (i = 0; i < count; i++) {
+		if (le32_to_cpu(table.entry[i].item) == H40_DDR_SMEM_ITEM) {
+			item_phys = le32_to_cpu(table.entry[i].phys_addr);
+			break;
+		}
+	}
+	if (!item_phys)
+		return -ENOENT;
+
+	smem_np = of_find_compatible_node(NULL, NULL, "qcom,smem");
+	if (!smem_np)
+		return -ENODEV;
+	region_np = of_parse_phandle(smem_np, "memory-region", 0);
+	of_node_put(smem_np);
+	if (!region_np)
+		return -ENODEV;
+	ret = of_address_to_resource(region_np, 0, &smem_region);
+	of_node_put(region_np);
+	if (ret)
+		return ret;
+	if (item_phys < smem_region.start || item_phys > smem_region.end ||
+	    H40_DDR_SMEM_WINDOW - 1 > smem_region.end - item_phys)
+		return -ERANGE;
+
+	item_io = ioremap_nocache(item_phys, H40_DDR_SMEM_WINDOW);
+	if (!item_io)
+		return -ENOMEM;
+	snapshot = kmalloc(H40_DDR_SMEM_WINDOW, GFP_KERNEL);
+	if (!snapshot) {
+		iounmap(item_io);
+		return -ENOMEM;
+	}
+	memcpy_fromio(snapshot, item_io, H40_DDR_SMEM_WINDOW);
+	iounmap(item_io);
+
+	ret = h40_ddr_parse_clock_plans(data, snapshot,
+					 H40_DDR_SMEM_WINDOW);
+	kfree(snapshot);
+	if (!ret)
+		data->clock_plan_phys = item_phys;
+	return ret;
+}
+
+static int h40_ddr_load_clock_plans(struct h40_ddr_data *data,
+				     const struct resource *base)
+{
+	const u8 *smem;
+	size_t size = 0;
+	int ret;
+
+	data->clock_plan_source = "unavailable";
+	smem = qcom_smem_get(QCOM_SMEM_HOST_ANY, H40_DDR_SMEM_ITEM, &size);
+	if (IS_ERR(smem))
+		ret = PTR_ERR(smem);
+	else
+		ret = h40_ddr_parse_clock_plans(data, smem, size);
+	data->qcom_smem_status = ret;
+	if (!ret) {
+		data->clock_plan_source = "qcom_smem";
+		return 0;
+	}
+	if (ret == -EPROBE_DEFER)
+		return ret;
+
+	ret = h40_ddr_load_clock_plans_from_aop(data, base);
+	data->aop_smem_status = ret;
+	if (!ret)
+		data->clock_plan_source = "aop_xbl_address_table";
+	return ret;
 }
 
 static int h40_ddr_create_attr(struct kobject *kobj,
@@ -462,6 +583,8 @@ static int h40_ddr_stats_probe(struct platform_device *pdev)
 	BUILD_BUG_ON(sizeof(struct h40_ddr_event) != 16);
 	BUILD_BUG_ON(sizeof(struct h40_ddr_aggregate) != 0xb0);
 	BUILD_BUG_ON(sizeof(struct h40_ddr_freq_state) != 0x28);
+	BUILD_BUG_ON(sizeof(struct h40_aop_smem_addr) != 8);
+	BUILD_BUG_ON(sizeof(struct h40_aop_smem_table) != 88);
 
 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
 	if (!data)
@@ -502,13 +625,13 @@ static int h40_ddr_stats_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	ret = h40_ddr_load_clock_plans(data);
+	ret = h40_ddr_load_clock_plans(data, base);
 	if (ret == -EPROBE_DEFER)
 		return ret;
 	if (ret)
 		dev_warn(&pdev->dev,
-			 "SMEM 604 clock plans unavailable (%d); exposing CP indices\n",
-			 ret);
+			 "SMEM 604 clock plans unavailable (qcom=%d, AOP table=%d); exposing CP indices\n",
+			 data->qcom_smem_status, data->aop_smem_status);
 
 	data->kobj = kobject_create_and_add("ddr", power_kobj);
 	if (!data->kobj)
@@ -537,8 +660,9 @@ static int h40_ddr_stats_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 	dev_info(&pdev->dev,
-		 "H.O.1.1 DDR ring ready at %pa+%#x, MC plans=%u SHUB plans=%u\n",
-		 &base->start, page_offset, data->mc_count, data->shub_count);
+		 "H.O.1.1 DDR ring ready at %pa+%#x, MC plans=%u SHUB plans=%u source=%s\n",
+		 &base->start, page_offset, data->mc_count, data->shub_count,
+		 data->clock_plan_source);
 	return 0;
 
 err_manager:
